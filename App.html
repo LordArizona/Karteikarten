@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ABR Karteikarten</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; background: #f5f5f4; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ============================================================
+   STORAGE-SHIM: ersetzt window.storage (nur in Claude verfügbar)
+   durch echtes Browser-localStorage, gleiche Schnittstelle.
+   ============================================================ */
+const LOCAL_PREFIX = "abr-fc:";
+window.storage = {
+  async get(key) {
+    try {
+      const raw = localStorage.getItem(LOCAL_PREFIX + key);
+      if (raw === null) return null;
+      return { key, value: raw };
+    } catch (e) {
+      return null;
+    }
+  },
+  async set(key, value) {
+    try {
+      localStorage.setItem(LOCAL_PREFIX + key, value);
+      return { key, value };
+    } catch (e) {
+      return null;
+    }
+  },
+};
+
+/* ============================================================
+   ICONS — kleine Inline-SVGs als Ersatz für lucide-react
+   (keine npm-Abhängigkeit nötig, läuft direkt im Browser)
+   ============================================================ */
+function Icon({ children, size = 16, className = "" }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      {children}
+    </svg>
+  );
+}
+const Clock = (p) => (
+  <Icon {...p}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Icon>
+);
+const CheckCircle2 = (p) => (
+  <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>
+);
+const Layers = (p) => (
+  <Icon {...p}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></Icon>
+);
+const RotateCcw = (p) => (
+  <Icon {...p}><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></Icon>
+);
+const Check = (p) => (
+  <Icon {...p}><polyline points="20 6 9 17 4 12" /></Icon>
+);
+const ChevronDown = (p) => (
+  <Icon {...p}><polyline points="6 9 12 15 18 9" /></Icon>
+);
+const ChevronUp = (p) => (
+  <Icon {...p}><polyline points="18 15 12 9 6 15" /></Icon>
+);
+const Settings2 = (p) => (
+  <Icon {...p}><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></Icon>
+);
+
+/* ============================================================
+   KARTENINHALT — hier werden künftig neue Karten ergänzt.
+   Bestehender Lernfortschritt (Box/Fälligkeit je Karten-ID)
+   bleibt beim Hinzufügen neuer Karten erhalten, solange die
+   IDs bestehender Karten unverändert bleiben.
+   ============================================================ */
+const CATEGORIES = [
+  { id: "methodik", label: "Methodik" },
+  { id: "anspruch", label: "Anspruchsgrundlagen" },
+  { id: "rechtsgeschaeft", label: "Rechtsgeschäft & WE" },
+  { id: "verpflichtung", label: "Verpflichtung & Verfügung" },
+  { id: "bereicherung", label: "§105 II & Bereicherungsrecht" },
+  { id: "test", label: "Test" },
+];
+
+const CARD_DATA = [
+  // --- Methodik der Rechtsanwendung ---
+  { id: "m1", cat: "methodik", q: "Aus welchen zwei Teilen besteht eine vollständige Rechtsnorm?", a: "**Tatbestand** (Voraussetzungen, „wenn“) und **Rechtsfolge** („dann“)" },
+  { id: "m2", cat: "methodik", q: "Was ist Subsumtion?", a: "Der Abgleich, ob die Voraussetzungen (der Tatbestand) einer Norm im konkreten Sachverhalt tatsächlich erfüllt sind" },
+  { id: "m3", cat: "methodik", q: "§ 194 Abs. 1 BGB?", a: "Legaldefinition **Anspruch**: das Recht, von einem anderen ein Tun oder Unterlassen zu verlangen" },
+  { id: "m4", cat: "methodik", q: "Was ist eine Anspruchsgrundlage?", a: "Eine Norm, deren Rechtsfolge ein Anspruch ist" },
+  { id: "m5", cat: "methodik", q: "Die 4 Schritte des Gutachtenstils?", a: "1. Obersatz  2. Voraussetzungen benennen  3. Subsumtion  4. Ergebnis" },
+  { id: "m6", cat: "methodik", q: "Merksatz für den Obersatz?", a: "„Wer will was von wem woraus?“ – formuliert in der Möglichkeitsform („könnte“)" },
+  { id: "m7", cat: "methodik", q: "Gutachtenstil vs. Urteilsstil – Signalwörter?", a: "Gutachten: also / somit / daher (Ergebnis am Ende). Urteilsstil (in Klausuren falsch!): denn (Ergebnis zuerst)" },
+  { id: "m8", cat: "methodik", q: "Die vier Auslegungsmethoden für Gesetzesbegriffe?", a: "Wortlaut (grammatikalisch), Systematik, Historie, Telos (Zweck/teleologisch)" },
+
+  // --- Anspruchsgrundlagen & Gegennormen ---
+  { id: "a1", cat: "anspruch", q: "§ 826 BGB – Voraussetzungen?", a: "Schaden zugefügt + **vorsätzlich** + **sittenwidrig** (kumulativ, alle drei nötig)" },
+  { id: "a2", cat: "anspruch", q: "§ 823 Abs. 1 BGB – Voraussetzungen (Kurzfassung)?", a: "Verletzung eines Rechtsguts (Leben/Körper/Gesundheit/Freiheit/Eigentum/sonst. Recht) durch Vorsatz **oder** Fahrlässigkeit, rechtswidrig, kausaler Schaden" },
+  { id: "a3", cat: "anspruch", q: "§ 826 vs. § 823 Abs. 1 – Hauptunterschied?", a: "§ 823: Vorsatz oder Fahrlässigkeit reicht. § 826: nur Vorsatz, dafür genügt jeder Vermögensschaden, aber Sittenwidrigkeit nötig" },
+  { id: "a4", cat: "anspruch", q: "§ 833 S. 1 BGB?", a: "Tierhalterhaftung: Wer durch ein Tier verletzt wird, hat gegen den Halter Anspruch auf Schadensersatz" },
+  { id: "a5", cat: "anspruch", q: "§ 833 S. 2 BGB?", a: "Anspruchshindernd: entfällt bei Nutztier (Beruf/Erwerb/Unterhalt), wenn Halter die erforderliche Sorgfalt beachtet hat" },
+  { id: "a6", cat: "anspruch", q: "§ 985 BGB?", a: "Der Eigentümer kann von dem Besitzer die Herausgabe der Sache verlangen" },
+  { id: "a7", cat: "anspruch", q: "§ 986 BGB?", a: "Anspruchshindernd zu § 985: entfällt, wenn der Besitzer gegenüber dem Eigentümer ein Recht zum Besitz hat" },
+  { id: "a8", cat: "anspruch", q: "§ 433 Abs. 1 / Abs. 2 BGB?", a: "Abs. 1: Käufer-Anspruch auf Übergabe + Eigentumsverschaffung. Abs. 2: Verkäufer-Anspruch auf Kaufpreiszahlung + Abnahme" },
+  { id: "a9", cat: "anspruch", q: "§ 604 Abs. 1 BGB?", a: "Der Entleiher ist verpflichtet, die geliehene Sache nach Ablauf der bestimmten Leihzeit zurückzugeben" },
+  { id: "a10", cat: "anspruch", q: "§ 657 BGB?", a: "Auslobung: öffentliches Belohnungsversprechen für eine Handlung; einseitiges Rechtsgeschäft + tatsächliche Handlung" },
+  { id: "a11", cat: "anspruch", q: "Vertragliche vs. gesetzliche Anspruchsgrundlagen – Prüfungsreihenfolge?", a: "Vertragliche Ansprüche werden **immer zuerst** geprüft, danach gesetzliche" },
+
+  // --- Rechtsgeschäft & Willenserklärung ---
+  { id: "r1", cat: "rechtsgeschaeft", q: "Definition Willenserklärung (WE)?", a: "Äußerung des Willens, eine bestimmte Rechtsfolge herbeizuführen, mit dem Ziel, sie gerade dadurch eintreten zu lassen" },
+  { id: "r2", cat: "rechtsgeschaeft", q: "Realakt vs. Rechtsgeschäft – Unterschied?", a: "Realakt: Rechtsfolge tritt unabhängig vom Willen ein. Rechtsgeschäft: Rechtsfolge tritt gerade **wegen** des erklärten Willens ein" },
+  { id: "r3", cat: "rechtsgeschaeft", q: "Was fehlt bei einer bloßen Gefälligkeit (z. B. Spaziergang verabreden)?", a: "Der **Rechtsbindungswille** – daher keine Rechtsfolge, kein Rechtsgeschäft" },
+  { id: "r4", cat: "rechtsgeschaeft", q: "§ 90 BGB?", a: "Sachen im Sinne des Gesetzes sind nur **körperliche Gegenstände**" },
+  { id: "r5", cat: "rechtsgeschaeft", q: "§ 854 Abs. 1 BGB?", a: "Der Besitz einer Sache wird durch Erlangung der **tatsächlichen Gewalt** über sie erworben" },
+  { id: "r6", cat: "rechtsgeschaeft", q: "Struktur einer Willenserklärung?", a: "innerer Wille + geäußerte Erklärung. Maßgeblich für den Inhalt ist grundsätzlich der **geäußerte** Wille" },
+  { id: "r7", cat: "rechtsgeschaeft", q: "Form von Willenserklärungen?", a: "Grundsätzlich frei (auch konkludent). Form nur nötig bei gesetzlicher (z. B. § 2231 BGB) oder vertraglicher Vorgabe" },
+  { id: "r8", cat: "rechtsgeschaeft", q: "Empfangsbedürftige vs. nicht empfangsbedürftige WE?", a: "Empfangsbedürftig (die meisten, z. B. Angebot/Annahme): wirksam erst bei Zugang. Nicht empfangsbedürftig (Ausnahme, z. B. § 959 BGB): wirksam schon bei Äußerung" },
+  { id: "r9", cat: "rechtsgeschaeft", q: "Einseitiges Rechtsgeschäft – Beispiele?", a: "§ 657 BGB (Auslobung), § 167 Abs. 1 BGB (Vollmacht) – nur eine WE nötig" },
+  { id: "r10", cat: "rechtsgeschaeft", q: "Vertrag – Definition?", a: "Zweiseitiges Rechtsgeschäft: zwei inhaltlich übereinstimmende Willenserklärungen (Angebot + Annahme)" },
+
+  // --- Verpflichtungs- & Verfügungsgeschäft ---
+  { id: "v1", cat: "verpflichtung", q: "Verpflichtungsgeschäft – Definition?", a: "Rechtsgeschäft, durch das man sich gegenüber einem anderen zu einem Tun/Unterlassen verpflichtet (Anspruch gegen sich selbst, § 194 Abs. 1 BGB)" },
+  { id: "v2", cat: "verpflichtung", q: "Verfügungsgeschäft – Definition?", a: "Rechtsgeschäft, durch das ein bestehendes Recht übertragen, aufgehoben, belastet oder inhaltlich verändert wird" },
+  { id: "v3", cat: "verpflichtung", q: "Trennungsprinzip?", a: "Verpflichtungs- und Verfügungsgeschäft sind zwei eigenständige Rechtsgeschäfte, die getrennt geprüft werden" },
+  { id: "v4", cat: "verpflichtung", q: "Abstraktionsprinzip?", a: "Die Wirksamkeit von Verpflichtungs- und Verfügungsgeschäft ist grundsätzlich **unabhängig** voneinander" },
+  { id: "v5", cat: "verpflichtung", q: "§ 929 S. 1 BGB – Voraussetzungen?", a: "1. Einigung (2 WE)  2. Übergabe (Realakt)  3. Verfügungsberechtigung des Veräußerers (immer **zuletzt** prüfen)" },
+  { id: "v6", cat: "verpflichtung", q: "Barkauf – wie viele Rechtsgeschäfte / Willenserklärungen?", a: "**3 Rechtsgeschäfte** (1 Kaufvertrag + 2 Übereignungen), zusammen **6 Willenserklärungen**" },
+  { id: "v7", cat: "verpflichtung", q: "Weitere Beispiele für Verpflichtungsgeschäfte?", a: "§ 535 BGB (Miete), § 516 BGB (Schenkung), § 657 BGB (Auslobung)" },
+  { id: "v8", cat: "verpflichtung", q: "Weitere Beispiele für Verfügungsgeschäfte?", a: "§ 398 BGB (Forderungsabtretung), § 397 BGB (Erlassvertrag), § 959 BGB (Dereliktion)" },
+
+  // --- § 105 Abs. 2 BGB & Bereicherungsrecht (Abstraktionsprinzip in der Praxis) ---
+  { id: "b1", cat: "bereicherung", q: "§ 105 Abs. 2 BGB?", a: "Die WE einer eigentlich geschäftsfähigen Person ist **nichtig**, wenn sie in einem Zustand abgegeben wird, der die freie Willensbildung **vorübergehend ausschließt** (z. B. Volltrunkenheit)" },
+  { id: "b2", cat: "bereicherung", q: "Reicht bloßes Angetrunkensein oder ein Kater für § 105 Abs. 2 BGB?", a: "**Nein** – der Zustand muss die freie Willensbildung wirklich ausschließen, vergleichbar mit echter Geschäftsunfähigkeit" },
+  { id: "b3", cat: "bereicherung", q: "§ 812 Abs. 1 S. 1, 1. Alt. BGB – Voraussetzungen?", a: "(1) etwas erlangt, (2) durch **Leistung**, (3) **ohne rechtlichen Grund**" },
+  { id: "b4", cat: "bereicherung", q: "Was bedeutet „Leistung“ im Sinne des § 812 BGB?", a: "Bewusste, zweckgerichtete Vermögensmehrung zur Erfüllung einer (wirklichen oder vermeintlichen) Verbindlichkeit" },
+  { id: "b5", cat: "bereicherung", q: "§ 812 BGB – Rechtsfolge, wenn Eigentum übergegangen ist?", a: "Herausgabe **und Rückübereignung** (die Rückübereignung läuft wieder über § 929 S. 1 BGB)" },
+  { id: "b6", cat: "bereicherung", q: "Prüfungsreihenfolge mit § 812 BGB?", a: "Vertragliche Ansprüche vor gesetzlichen; **§ 812 BGB wird innerhalb der gesetzlichen Ansprüche immer zuletzt geprüft**" },
+  { id: "b7", cat: "bereicherung", q: "Verpflichtungsgeschäft nichtig, Verfügungsgeschäft wirksam – welche Ansprüche bestehen?", a: "Kein vertraglicher Anspruch; kein § 985 BGB (Eigentum bereits wirksam übergegangen) – aber **§ 812 BGB** (Leistungskondiktion) greift, weil ohne Rechtsgrund geleistet wurde" },
+  { id: "b8", cat: "bereicherung", q: "Verpflichtungsgeschäft wirksam, Verfügungsgeschäft nichtig – welche Ansprüche bestehen?", a: "Vertraglicher Anspruch (z. B. § 433 BGB) besteht; § 985 BGB scheitert meist an § 986 BGB (Recht zum Besitz aus dem wirksamen Vertrag); § 812 BGB scheitert (ein Rechtsgrund liegt ja vor)" },
+  { id: "b9", cat: "bereicherung", q: "Beide Geschäfte (Verpflichtung + Verfügung) nichtig – welche Ansprüche bestehen?", a: "Kein vertraglicher Anspruch; aber **§ 985 BGB** (Eigentum nie verloren) **und § 812 BGB** (ohne Rechtsgrund geleistet) bestehen parallel" },
+  { id: "b12", cat: "bereicherung", q: "Beide Geschäfte (Verpflichtung + Verfügung) wirksam – welche Ansprüche bestehen?", a: "Der Normalfall: vertraglicher Anspruch besteht und ist durch die wirksame Verfügung bereits erfüllt (§ 362 Abs. 1 BGB) – kein § 985, kein § 812 nötig" },
+  { id: "b13", cat: "bereicherung", q: "Merksatz: Wie gehst du bei möglicher Nichtigkeit (z. B. § 105 Abs. 2 BGB) methodisch vor?", a: "Zwei Fragen **getrennt** stellen: (1) War das Verpflichtungsgeschäft wirksam? (2) War das Verfügungsgeschäft wirksam? Aus der Kombination beider Antworten ergibt sich, welche Anspruchsgrundlage greift" },
+  { id: "b10", cat: "bereicherung", q: "Anspruchsnormenkonkurrenz – Definition?", a: "Ein wirtschaftlicher Anspruch ergibt sich aus **mehreren, unabhängigen** Anspruchsgrundlagen gleichzeitig (z. B. § 604 + § 985, oder § 985 + § 812 BGB)" },
+  { id: "b11", cat: "bereicherung", q: "Klausurregel bei Anspruchsnormenkonkurrenz?", a: "Jede in Betracht kommende Anspruchsgrundlage wird **einzeln geprüft** – auch wenn das Ergebnis am Ende gleich ist" },
+
+  // --- Test: nur zum Prüfen, ob die Speicherung funktioniert ---
+  { id: "t1", cat: "test", q: "Testkarte – speichert das?", a: "Beantworte diese Karte mit „Kann ich“, schließ die App komplett und öffne sie erneut. Steht unten dann **Box: 1** statt **Box: 0**, hat die Speicherung geklappt. Danach kannst du diese Karte einfach ignorieren." },
+];
+
+const CARD_BY_ID = Object.fromEntries(CARD_DATA.map((c) => [c.id, c]));
+const CAT_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label]));
+
+const PROGRESS_KEY = "abr-fc-progress-v1";
+const SETTINGS_KEY = "abr-fc-settings-v1";
+const DAY_MS = 24 * 60 * 60 * 1000;
+const INTERVAL_DAYS = [0, 1, 2, 4, 7, 14, 30]; // index = box
+const MASTERED_BOX = 5;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function defaultProgressFor(id) {
+  return { box: 0, due: Date.now(), seen: 0, correct: 0 };
+}
+
+function RichText({ text, className }) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  return (
+    <span className={className}>
+      {parts.map((p, i) =>
+        p.startsWith("**") && p.endsWith("**") ? (
+          <strong key={i} className="font-semibold text-slate-900">
+            {p.slice(2, -2)}
+          </strong>
+        ) : (
+          <React.Fragment key={i}>{p}</React.Fragment>
+        )
+      )}
+    </span>
+  );
+}
+
+function App() {
+  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState({});
+  const [selectedCats, setSelectedCats] = useState(CATEGORIES.map((c) => c.id));
+  const [view, setView] = useState("practice"); // 'practice' | 'browse'
+  const [queue, setQueue] = useState([]);
+  const [flipped, setFlipped] = useState(false);
+  const [sessionAnswered, setSessionAnswered] = useState(0);
+  const [sessionCorrect, setSessionCorrect] = useState(0);
+  const [showSettings, setShowSettings] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [expandedBrowse, setExpandedBrowse] = useState({});
+  const [now, setNow] = useState(Date.now());
+  const reducedMotion = useRef(false);
+
+  useEffect(() => {
+    try {
+      reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (e) {}
+  }, []);
+
+  // ---- load + merge on mount ----
+  useEffect(() => {
+    (async () => {
+      let stored = {};
+      try {
+        const res = await window.storage.get(PROGRESS_KEY, false);
+        if (res && res.value) stored = JSON.parse(res.value);
+      } catch (e) {
+        stored = {};
+      }
+      let changed = false;
+      const merged = { ...stored };
+      for (const card of CARD_DATA) {
+        if (!merged[card.id]) {
+          merged[card.id] = defaultProgressFor(card.id);
+          changed = true;
+        }
+      }
+      setProgress(merged);
+      if (changed) {
+        try {
+          await window.storage.set(PROGRESS_KEY, JSON.stringify(merged), false);
+        } catch (e) {
+          console.error("Storage error", e);
+        }
+      }
+
+      let settings = null;
+      try {
+        const res = await window.storage.get(SETTINGS_KEY, false);
+        if (res && res.value) settings = JSON.parse(res.value);
+      } catch (e) {}
+      if (settings && Array.isArray(settings.selectedCats) && settings.selectedCats.length > 0) {
+        setSelectedCats(settings.selectedCats);
+      }
+
+      setLoading(false);
+    })();
+  }, []);
+
+  const persistProgress = useCallback(async (next) => {
+    try {
+      await window.storage.set(PROGRESS_KEY, JSON.stringify(next), false);
+    } catch (e) {
+      console.error("Storage error", e);
+    }
+  }, []);
+
+  const persistSettings = useCallback(async (cats) => {
+    try {
+      await window.storage.set(SETTINGS_KEY, JSON.stringify({ selectedCats: cats }), false);
+    } catch (e) {
+      console.error("Storage error", e);
+    }
+  }, []);
+
+  const buildQueue = useCallback(
+    (opts = {}) => {
+      const ignoreDue = !!opts.ignoreDue;
+      const pool = CARD_DATA.filter((c) => selectedCats.includes(c.cat));
+      const due = pool.filter((c) => ignoreDue || (progress[c.id]?.due ?? 0) <= Date.now());
+      setQueue(shuffle(due).map((c) => c.id));
+      setFlipped(false);
+      setSessionAnswered(0);
+      setSessionCorrect(0);
+    },
+    [progress, selectedCats]
+  );
+
+  // build initial queue once progress is loaded
+  useEffect(() => {
+    if (!loading) buildQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
+
+  function toggleCategory(id) {
+    setSelectedCats((prev) => {
+      const next = prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id];
+      const finalCats = next.length === 0 ? prev : next;
+      persistSettings(finalCats);
+      return finalCats;
+    });
+  }
+
+  useEffect(() => {
+    if (!loading) buildQueue();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCats]);
+
+  const currentId = queue[0];
+  const currentCard = currentId ? CARD_BY_ID[currentId] : null;
+
+  function answer(correct) {
+    if (!currentId) return;
+    const prev = progress[currentId] || defaultProgressFor(currentId);
+    let box = correct ? Math.min(prev.box + 1, INTERVAL_DAYS.length - 1) : 0;
+    const due = correct ? Date.now() + INTERVAL_DAYS[box] * DAY_MS : Date.now();
+    const nextEntry = {
+      box,
+      due,
+      seen: prev.seen + 1,
+      correct: prev.correct + (correct ? 1 : 0),
+    };
+    const nextProgress = { ...progress, [currentId]: nextEntry };
+    setProgress(nextProgress);
+    persistProgress(nextProgress);
+
+    setSessionAnswered((n) => n + 1);
+    if (correct) setSessionCorrect((n) => n + 1);
+
+    setQueue((q) => {
+      const rest = q.slice(1);
+      if (!correct) {
+        const insertAt = Math.min(rest.length, 3 + Math.floor(Math.random() * 3));
+        rest.splice(insertAt, 0, currentId);
+      }
+      return rest;
+    });
+    setFlipped(false);
+  }
+
+  const dueCountTotal = CARD_DATA.filter(
+    (c) => selectedCats.includes(c.cat) && (progress[c.id]?.due ?? 0) <= now
+  ).length;
+  const masteredCount = CARD_DATA.filter(
+    (c) => selectedCats.includes(c.cat) && (progress[c.id]?.box ?? 0) >= MASTERED_BOX
+  ).length;
+  const totalInSelection = CARD_DATA.filter((c) => selectedCats.includes(c.cat)).length;
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-stone-100 flex flex-col items-center font-sans">
+      <div className="w-full max-w-md bg-stone-100 min-h-screen flex flex-col shadow-xl">
+        {/* Header */}
+        <header className="bg-slate-900 text-stone-50 px-5 pt-5 pb-4 border-b-4 border-amber-600">
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="font-serif text-2xl tracking-tight">Karteikarten</h1>
+              <p className="text-amber-300/90 text-xs mt-0.5 font-sans">ABR · bis es sitzt</p>
+            </div>
+            <button
+              onClick={() => setShowSettings((s) => !s)}
+              aria-label="Einstellungen"
+              className="p-2 rounded-full text-stone-300 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              <Settings2 size={20} />
+            </button>
+          </div>
+
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => setView("practice")}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+                view === "practice" ? "bg-amber-600 text-white" : "bg-white/10 text-stone-200"
+              }`}
+            >
+              Üben
+            </button>
+            <button
+              onClick={() => setView("browse")}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 ${
+                view === "browse" ? "bg-amber-600 text-white" : "bg-white/10 text-stone-200"
+              }`}
+            >
+              Alle Karten
+            </button>
+          </div>
+        </header>
+
+        {showSettings && (
+          <div className="bg-white border-b border-stone-200 px-5 py-4">
+            <p className="text-xs uppercase tracking-wide text-stone-500 font-sans mb-2">Fortschritt</p>
+            {!confirmReset ? (
+              <button
+                onClick={() => setConfirmReset(true)}
+                className="text-sm text-rose-700 underline decoration-rose-300 underline-offset-2"
+              >
+                Fortschritt zurücksetzen
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 text-sm">
+                <span className="text-stone-700">Wirklich alle Karten zurücksetzen?</span>
+                <button
+                  onClick={async () => {
+                    const reset = {};
+                    for (const c of CARD_DATA) reset[c.id] = defaultProgressFor(c.id);
+                    setProgress(reset);
+                    await persistProgress(reset);
+                    setConfirmReset(false);
+                    buildQueue();
+                  }}
+                  className="px-2 py-1 rounded bg-rose-700 text-white text-xs font-medium"
+                >
+                  Ja, zurücksetzen
+                </button>
+                <button
+                  onClick={() => setConfirmReset(false)}
+                  className="px-2 py-1 rounded bg-stone-200 text-stone-700 text-xs font-medium"
+                >
+                  Abbrechen
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Category filter */}
+        <div className="px-5 py-3 bg-stone-100 flex gap-2 overflow-x-auto">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => toggleCategory(c.id)}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-slate-400 ${
+                selectedCats.includes(c.id)
+                  ? "bg-slate-900 text-white border-slate-900"
+                  : "bg-white text-stone-600 border-stone-300"
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className="px-5 py-2 bg-white border-y border-stone-200 flex items-center justify-between text-sm font-mono text-stone-700">
+          <span className="flex items-center gap-1.5">
+            <Clock size={14} className="text-amber-700" />
+            Fällig: {dueCountTotal}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <CheckCircle2 size={14} className="text-emerald-700" />
+            Sitzt: {masteredCount}/{totalInSelection}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Layers size={14} className="text-slate-500" />
+            {totalInSelection}
+          </span>
+        </div>
+
+        {/* Main content */}
+        <main className="flex-1 px-5 py-6 flex flex-col">
+          {loading ? (
+            <div className="flex-1 flex items-center justify-center text-stone-400 text-sm">
+              Lade Karten …
+            </div>
+          ) : totalInSelection === 0 ? (
+            <div className="flex-1 flex items-center justify-center text-center text-stone-500 text-sm px-6">
+              Wähle mindestens eine Kategorie oben aus.
+            </div>
+          ) : view === "browse" ? (
+            <BrowseList
+              cards={CARD_DATA.filter((c) => selectedCats.includes(c.cat))}
+              expanded={expandedBrowse}
+              setExpanded={setExpandedBrowse}
+            />
+          ) : !currentCard ? (
+            <EmptyOrDoneState
+              sessionAnswered={sessionAnswered}
+              sessionCorrect={sessionCorrect}
+              onPracticeAnyway={() => buildQueue({ ignoreDue: true })}
+              onRefresh={() => buildQueue()}
+            />
+          ) : (
+            <PracticeCard
+              card={currentCard}
+              flipped={flipped}
+              onFlip={() => setFlipped(true)}
+              onAnswer={answer}
+              remaining={queue.length}
+              categoryLabel={CAT_LABEL[currentCard.cat]}
+              reducedMotion={reducedMotion.current}
+              progressInfo={progress[currentCard.id]}
+            />
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function PracticeCard({ card, flipped, onFlip, onAnswer, remaining, categoryLabel, reducedMotion, progressInfo }) {
+  const box = progressInfo?.box ?? 0;
+  const seen = progressInfo?.seen ?? 0;
+  return (
+    <div className="flex-1 flex flex-col">
+      <p className="text-xs font-mono text-stone-400 mb-1 text-center">
+        {remaining} {remaining === 1 ? "Karte" : "Karten"} in dieser Runde
+      </p>
+      <p className="text-[10px] font-mono text-stone-300 mb-3 text-center">
+        Box: {box} · gesehen: {seen}×
+      </p>
+
+      <div
+        className="mx-auto w-full"
+        style={{ perspective: "1200px" }}
+      >
+        <div
+          onClick={() => !flipped && onFlip()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if ((e.key === "Enter" || e.key === " ") && !flipped) onFlip();
+          }}
+          className="relative w-full focus:outline-none"
+          style={{
+            minHeight: "260px",
+            transformStyle: "preserve-3d",
+            transition: reducedMotion ? "none" : "transform 0.5s",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+            cursor: flipped ? "default" : "pointer",
+          }}
+        >
+          {/* Front */}
+          <div
+            className="absolute inset-0 rounded-xl border border-stone-300 bg-amber-50 shadow-md flex flex-col p-5"
+            style={{ backfaceVisibility: "hidden" }}
+          >
+            <CardChrome label={categoryLabel} />
+            <div className="flex-1 flex items-center justify-center text-center px-2">
+              <p className="font-serif text-lg text-slate-900 leading-snug">{card.q}</p>
+            </div>
+            <p className="text-center text-xs text-stone-400 font-sans mt-2">Tippen zum Umdrehen</p>
+          </div>
+
+          {/* Back */}
+          <div
+            className="absolute inset-0 rounded-xl border border-stone-300 bg-stone-50 shadow-md flex flex-col p-5"
+            style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
+          >
+            <CardChrome label={categoryLabel} />
+            <div className="flex-1 flex items-center justify-center text-center px-1 overflow-y-auto">
+              <RichText text={card.a} className="font-serif text-base text-slate-800 leading-relaxed" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex gap-3">
+        {!flipped ? (
+          <button
+            onClick={onFlip}
+            className="w-full py-3 rounded-lg bg-slate-900 text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-500 active:scale-95 transition-transform"
+          >
+            Antwort zeigen
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={() => onAnswer(false)}
+              className="flex-1 py-3 rounded-lg border-2 border-rose-700 text-rose-700 font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-rose-400 active:scale-95 transition-transform"
+            >
+              <RotateCcw size={16} />
+              Nochmal
+            </button>
+            <button
+              onClick={() => onAnswer(true)}
+              className="flex-1 py-3 rounded-lg bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 active:scale-95 transition-transform"
+            >
+              <Check size={16} />
+              Kann ich
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CardChrome({ label }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <span
+        className="inline-block rounded-full bg-white border border-stone-300"
+        style={{ width: 14, height: 14 }}
+        aria-hidden="true"
+      />
+      <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500">{label}</span>
+    </div>
+  );
+}
+
+function EmptyOrDoneState({ sessionAnswered, sessionCorrect, onPracticeAnyway, onRefresh }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
+      {sessionAnswered > 0 ? (
+        <>
+          <p className="font-serif text-xl text-slate-900 mb-1">Runde geschafft 🎉</p>
+          <p className="text-stone-500 text-sm mb-6">
+            {sessionCorrect} von {sessionAnswered} richtig
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="font-serif text-xl text-slate-900 mb-1">Für jetzt nichts fällig</p>
+          <p className="text-stone-500 text-sm mb-6">Gut gemacht – schau später wieder vorbei.</p>
+        </>
+      )}
+      <div className="flex flex-col gap-2 w-full max-w-xs">
+        <button
+          onClick={onPracticeAnyway}
+          className="py-2.5 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-400"
+        >
+          Trotzdem üben
+        </button>
+        <button
+          onClick={onRefresh}
+          className="py-2.5 rounded-lg text-stone-400 text-xs"
+        >
+          Aktualisieren
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function BrowseList({ cards, expanded, setExpanded }) {
+  const byCat = {};
+  for (const c of cards) {
+    if (!byCat[c.cat]) byCat[c.cat] = [];
+    byCat[c.cat].push(c);
+  }
+  return (
+    <div className="space-y-6">
+      {Object.entries(byCat).map(([catId, catCards]) => (
+        <div key={catId}>
+          <p className="text-xs uppercase tracking-wide text-amber-700 font-sans font-semibold mb-2">
+            {CAT_LABEL[catId]}
+          </p>
+          <div className="space-y-2">
+            {catCards.map((c) => {
+              const isOpen = !!expanded[c.id];
+              return (
+                <div key={c.id} className="rounded-lg border border-stone-200 bg-white overflow-hidden">
+                  <button
+                    onClick={() => setExpanded((e) => ({ ...e, [c.id]: !e[c.id] }))}
+                    className="w-full flex items-center justify-between px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400"
+                  >
+                    <span className="font-serif text-sm text-slate-900 pr-3">{c.q}</span>
+                    {isOpen ? (
+                      <ChevronUp size={16} className="text-stone-400 shrink-0" />
+                    ) : (
+                      <ChevronDown size={16} className="text-stone-400 shrink-0" />
+                    )}
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-3 border-t border-stone-100 pt-2">
+                      <RichText text={c.a} className="text-sm text-stone-700 leading-relaxed" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+</script>
+</body>
+</html>
