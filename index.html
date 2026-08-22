@@ -1,111 +1,168 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>ABR Karteikarten</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
-<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
 <style>
-  html, body { margin: 0; padding: 0; background: #f5f5f4; }
+  :root {
+    --navy: #1e293b;
+    --navy-2: #0f172a;
+    --gold: #b45309;
+    --gold-light: #d97706;
+    --cream: #fdf6e3;
+    --paper: #fafaf9;
+    --ink: #1c1917;
+    --muted: #78716c;
+    --border: #d6d3d1;
+    --rose: #9f1239;
+    --emerald: #047857;
+    --shell-bg: #f0efec;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--shell-bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif { font-family: Georgia, "Times New Roman", serif; }
+  .mono { font-family: "SF Mono", Consolas, "Courier New", monospace; }
+  button { font-family: inherit; cursor: pointer; }
+  #root { display: flex; justify-content: center; min-height: 100vh; }
+  .shell {
+    width: 100%; max-width: 448px;
+    min-height: 100vh;
+    background: var(--shell-bg);
+    display: flex; flex-direction: column;
+    box-shadow: 0 0 24px rgba(0,0,0,0.08);
+  }
+
+  /* Header */
+  header {
+    background: var(--navy);
+    color: #fafaf9;
+    padding: 20px 20px 16px;
+    border-bottom: 4px solid var(--gold);
+  }
+  .header-row { display: flex; align-items: flex-start; justify-content: space-between; }
+  .app-title { font-size: 24px; margin: 0; letter-spacing: -0.01em; }
+  .app-subtitle { color: #fcd34d; font-size: 12px; margin: 2px 0 0; }
+  .icon-btn {
+    background: none; border: none; color: #cbd5e1; padding: 8px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+  .tabs { display: flex; gap: 8px; margin-top: 16px; }
+  .tab-btn {
+    padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 500;
+    border: none; background: rgba(255,255,255,0.1); color: #e2e8f0;
+  }
+  .tab-btn.active { background: var(--gold-light); color: #fff; }
+
+  /* Settings panel */
+  .settings-panel { background: #fff; border-bottom: 1px solid var(--border); padding: 14px 20px; }
+  .settings-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 8px; }
+  .link-danger { background: none; border: none; color: var(--rose); font-size: 14px; text-decoration: underline; padding: 0; }
+  .confirm-row { display: flex; align-items: center; gap: 10px; font-size: 14px; flex-wrap: wrap; }
+  .btn-small-danger { background: var(--rose); color: #fff; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+  .btn-small-neutral { background: #e7e5e4; color: #44403c; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; }
+
+  /* Category filter */
+  .cat-filter { padding: 12px 20px; display: flex; gap: 8px; overflow-x: auto; background: var(--shell-bg); }
+  .cat-chip {
+    white-space: nowrap; padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); background: #fff; color: #57534e; flex-shrink: 0;
+  }
+  .cat-chip.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+  /* Stats bar */
+  .stats-bar {
+    padding: 8px 20px; background: #fff; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #44403c;
+  }
+  .stat { display: flex; align-items: center; gap: 5px; }
+
+  main { flex: 1; padding: 24px 20px; display: flex; flex-direction: column; }
+
+  /* Practice card */
+  .queue-count { text-align: center; font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+  .card-outer { perspective: 1200px; width: 100%; margin: 0 auto; }
+  .card-inner {
+    position: relative; width: 100%; min-height: 260px;
+    transition: transform 0.5s; transform-style: preserve-3d; cursor: pointer;
+  }
+  .card-inner.flipped { transform: rotateY(180deg); }
+  .card-inner.no-flip-cursor { cursor: default; }
+  .card-face {
+    position: absolute; inset: 0; border-radius: 14px; border: 1px solid var(--border);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.07);
+    display: flex; flex-direction: column; padding: 20px;
+    backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  }
+  .card-front { background: var(--cream); }
+  .card-back { background: var(--paper); transform: rotateY(180deg); }
+  .card-chrome { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .hole-punch { width: 14px; height: 14px; border-radius: 999px; background: #fff; border: 1px solid var(--border); }
+  .cat-label { font-size: 10px; font-family: "SF Mono", Consolas, monospace; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+  .card-body { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 4px; overflow-y: auto; }
+  .card-q { font-family: Georgia, serif; font-size: 18px; color: #0c0a09; line-height: 1.4; margin: 0; }
+  .card-a { font-family: Georgia, serif; font-size: 16px; color: #292524; line-height: 1.55; margin: 0; }
+  .card-hint { text-align: center; font-size: 12px; color: #a8a29e; margin: 8px 0 0; }
+
+  .action-row { margin-top: 24px; display: flex; gap: 12px; }
+  .btn { border: none; border-radius: 10px; padding: 13px; font-size: 15px; font-weight: 500; flex: 1;
+    display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.1s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--navy); color: #fff; width: 100%; }
+  .btn-wrong { background: #fff; color: var(--rose); border: 2px solid var(--rose); }
+  .btn-correct { background: var(--emerald); color: #fff; }
+
+  .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 16px; }
+  .empty-title { font-family: Georgia, serif; font-size: 20px; color: #0c0a09; margin: 0 0 4px; }
+  .empty-sub { color: var(--muted); font-size: 14px; margin: 0 0 24px; }
+  .empty-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 260px; }
+  .btn-outline { background: #fff; border: 1px solid var(--border); color: #44403c; padding: 10px; border-radius: 10px; font-size: 14px; font-weight: 500; }
+  .btn-ghost { background: none; border: none; color: #a8a29e; padding: 8px; font-size: 12px; }
+
+  /* Browse view */
+  .browse-group { margin-bottom: 22px; }
+  .browse-group-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gold); font-weight: 600; margin: 0 0 8px; }
+  .browse-item { border: 1px solid #e7e5e4; background: #fff; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+  .browse-item-q { width: 100%; background: none; border: none; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; text-align: left; gap: 10px; }
+  .browse-item-q span.qtext { font-family: Georgia, serif; font-size: 14px; color: #0c0a09; }
+  .browse-item-a { padding: 0 14px 12px; border-top: 1px solid #f5f5f4; margin-top: 0; }
+  .browse-item-a p { font-size: 13.5px; color: #44403c; line-height: 1.55; margin: 10px 0 0; }
+  .chev { flex-shrink: 0; color: #a8a29e; }
+
+  .loading-msg { flex: 1; display: flex; align-items: center; justify-content: center; color: #a8a29e; font-size: 14px; }
+
+  svg.icon { display: block; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
-const { useState, useEffect, useRef, useCallback } = React;
-
-/* ============================================================
-   STORAGE-SHIM: ersetzt window.storage (nur in Claude verfügbar)
-   durch echtes Browser-localStorage, gleiche Schnittstelle.
-   ============================================================ */
-const LOCAL_PREFIX = "abr-fc:";
-window.storage = {
-  async get(key) {
-    try {
-      const raw = localStorage.getItem(LOCAL_PREFIX + key);
-      if (raw === null) return null;
-      return { key, value: raw };
-    } catch (e) {
-      return null;
-    }
-  },
-  async set(key, value) {
-    try {
-      localStorage.setItem(LOCAL_PREFIX + key, value);
-      return { key, value };
-    } catch (e) {
-      return null;
-    }
-  },
-};
-
-/* ============================================================
-   ICONS — kleine Inline-SVGs als Ersatz für lucide-react
-   (keine npm-Abhängigkeit nötig, läuft direkt im Browser)
-   ============================================================ */
-function Icon({ children, size = 16, className = "" }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      {children}
-    </svg>
-  );
-}
-const Clock = (p) => (
-  <Icon {...p}><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></Icon>
-);
-const CheckCircle2 = (p) => (
-  <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>
-);
-const Layers = (p) => (
-  <Icon {...p}><polygon points="12 2 2 7 12 12 22 7 12 2" /><polyline points="2 17 12 22 22 17" /><polyline points="2 12 12 17 22 12" /></Icon>
-);
-const RotateCcw = (p) => (
-  <Icon {...p}><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" /></Icon>
-);
-const Check = (p) => (
-  <Icon {...p}><polyline points="20 6 9 17 4 12" /></Icon>
-);
-const ChevronDown = (p) => (
-  <Icon {...p}><polyline points="6 9 12 15 18 9" /></Icon>
-);
-const ChevronUp = (p) => (
-  <Icon {...p}><polyline points="18 15 12 9 6 15" /></Icon>
-);
-const Settings2 = (p) => (
-  <Icon {...p}><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></Icon>
-);
-
+<script>
 /* ============================================================
    KARTENINHALT — hier werden künftig neue Karten ergänzt.
    Bestehender Lernfortschritt (Box/Fälligkeit je Karten-ID)
    bleibt beim Hinzufügen neuer Karten erhalten, solange die
    IDs bestehender Karten unverändert bleiben.
    ============================================================ */
-const CATEGORIES = [
+var CATEGORIES = [
   { id: "methodik", label: "Methodik" },
   { id: "anspruch", label: "Anspruchsgrundlagen" },
   { id: "rechtsgeschaeft", label: "Rechtsgeschäft & WE" },
   { id: "verpflichtung", label: "Verpflichtung & Verfügung" },
   { id: "bereicherung", label: "§105 II & Bereicherungsrecht" },
-  { id: "test", label: "Test" },
+  { id: "zugang", label: "§ 130 – Zugang" },
+  { id: "auslegung", label: "Auslegung von WE" },
+  { id: "vertragsschluss", label: "Zustandekommen von Verträgen" }
 ];
 
-const CARD_DATA = [
+var CARD_DATA = [
   // --- Methodik der Rechtsanwendung ---
   { id: "m1", cat: "methodik", q: "Aus welchen zwei Teilen besteht eine vollständige Rechtsnorm?", a: "**Tatbestand** (Voraussetzungen, „wenn“) und **Rechtsfolge** („dann“)" },
   { id: "m2", cat: "methodik", q: "Was ist Subsumtion?", a: "Der Abgleich, ob die Voraussetzungen (der Tatbestand) einer Norm im konkreten Sachverhalt tatsächlich erfüllt sind" },
@@ -166,535 +223,399 @@ const CARD_DATA = [
   { id: "b10", cat: "bereicherung", q: "Anspruchsnormenkonkurrenz – Definition?", a: "Ein wirtschaftlicher Anspruch ergibt sich aus **mehreren, unabhängigen** Anspruchsgrundlagen gleichzeitig (z. B. § 604 + § 985, oder § 985 + § 812 BGB)" },
   { id: "b11", cat: "bereicherung", q: "Klausurregel bei Anspruchsnormenkonkurrenz?", a: "Jede in Betracht kommende Anspruchsgrundlage wird **einzeln geprüft** – auch wenn das Ergebnis am Ende gleich ist" },
 
-  // --- Test: nur zum Prüfen, ob die Speicherung funktioniert ---
-  { id: "t1", cat: "test", q: "Testkarte – speichert das?", a: "Beantworte diese Karte mit „Kann ich“, schließ die App komplett und öffne sie erneut. Steht unten dann **Box: 1** statt **Box: 0**, hat die Speicherung geklappt. Danach kannst du diese Karte einfach ignorieren." },
+  // --- § 130 BGB – Zugang von Willenserklärungen ---
+  { id: "z1", cat: "zugang", q: "§ 130 Abs. 1 S. 1 BGB – Definition Zugang?", a: "WE ist zugegangen, wenn sie so in den **Machtbereich** des Empfängers gelangt ist, dass unter normalen Umständen mit der **Möglichkeit der Kenntnisnahme** gerechnet werden kann" },
+  { id: "z2", cat: "zugang", q: "Ist tatsächliche Kenntnisnahme für den Zugang erforderlich?", a: "Nein – die bloße Möglichkeit reicht. Erfolgt tatsächliche Kenntnisnahme aber früher, zählt dieser frühere Zeitpunkt" },
+  { id: "z3", cat: "zugang", q: "Zugangs-Faustregel: Brief wird abends/nachts in Privatbriefkasten eingeworfen?", a: "Zugang erst am nächsten Morgen – unter normalen Umständen ist erst dann mit Kenntnisnahme zu rechnen" },
+  { id: "z4", cat: "zugang", q: "§ 130 Abs. 1 S. 2 BGB – Widerruf?", a: "Die WE wird nicht wirksam, wenn dem Empfänger vorher oder **gleichzeitig** ein Widerruf zugeht. Der Widerruf ist selbst eine empfangsbedürftige WE" },
+  { id: "z5", cat: "zugang", q: "Umkehrschluss aus § 130 Abs. 1 S. 2 BGB?", a: "Eine einmal wirksam gewordene WE ist grundsätzlich **nicht mehr widerruflich** (Ausnahme z. B. § 312g BGB)" },
+  { id: "z6", cat: "zugang", q: "Empfangsbote?", a: "Person, die vom Empfänger bestellt wurde oder nach der Verkehrsanschauung als dafür bestellt gilt und Gewähr für die Weitergabe bietet – WE geht **sofort** zu, auch wenn Weitergabe unterbleibt" },
+  { id: "z7", cat: "zugang", q: "Erklärungsbote?", a: "Person ohne diese Gewähr (z. B. Kleinkind) – WE geht erst zu, wenn tatsächlich weitergegeben" },
+  { id: "z8", cat: "zugang", q: "§ 130 Abs. 2 BGB?", a: "Tod oder Geschäftsunfähigkeit des Erklärenden **nach** Abgabe der WE hat keinen Einfluss auf deren Wirksamkeit" },
+  { id: "z9", cat: "zugang", q: "Wirksamwerden gegenüber Anwesenden – verkörperte vs. nicht verkörperte WE?", a: "Verkörpert (z. B. Brief): wirksam durch Besitzerlangung (§ 854 Abs. 1 BGB). Nicht verkörpert (Worte/Gesten): wirksam durch akustische/optische Wahrnehmbarkeit – Verstehen-Müssen genügt" },
+  { id: "z10", cat: "zugang", q: "Wie werden Telefonate beim Wirksamwerden behandelt?", a: "Wie Erklärungen unter **Anwesenden** (nicht Abwesenden) – Rechtsgedanke aus § 147 Abs. 1 S. 2 BGB" },
+
+  // --- Auslegung von Willenserklärungen ---
+  { id: "au1", cat: "auslegung", q: "Was ist der Empfängerhorizont?", a: "Maßstab für die Auslegung empfangsbedürftiger WE: wie ein verständiger Dritter in der Position des Empfängers die Erklärung verstehen musste (§§ 133, 157 BGB)" },
+  { id: "au2", cat: "auslegung", q: "Gilt der Empfängerhorizont auch bei einseitigen Rechtsgeschäften?", a: "Ja – trotz des Wortlauts von § 157 BGB ('Verträge')" },
+  { id: "au3", cat: "auslegung", q: "Was meint § 133 BGB mit dem „wirklichen Willen“?", a: "Den **geäußerten** Willen, nicht den rein inneren Willen des Erklärenden" },
+  { id: "au4", cat: "auslegung", q: "Die sieben Auslegungskriterien?", a: "Wortlaut, Sprachgebrauch, Zusammenhang/Kontext, Umstände, Interessenlage, Treu und Glauben, Verkehrssitte" },
+  { id: "au5", cat: "auslegung", q: "Wann kommen gesetzliche Auslegungsregeln (z. B. § 926 Abs. 1 S. 2 BGB) zum Einsatz?", a: "Nur subsidiär – wenn die individuelle Auslegung nach §§ 133, 157 BGB zu keinem eindeutigen Ergebnis führt" },
+  { id: "au6", cat: "auslegung", q: "Falsa demonstratio non nocet?", a: "Verstehen beide Parteien einen Begriff übereinstimmend in einem bestimmten Sinn, gilt dieser Sinn – auch wenn das Wort objektiv etwas anderes bedeutet" },
+  { id: "au7", cat: "auslegung", q: "Gilt der Empfängerhorizont auch bei nicht empfangsbedürftigen WE?", a: "Nein – hier gibt es keinen bestimmten Adressaten, maßgeblich ist allein der Wille des Erklärenden" },
+
+  // --- Zustandekommen von Verträgen ---
+  { id: "v9", cat: "vertragsschluss", q: "Die sechs Voraussetzungen für das Zustandekommen eines Vertrags?", a: "Angebot – Wirksamwerden des Angebots – Annahme – Wirksamwerden der Annahme – inhaltliche Übereinstimmung – Annahmefähigkeit des Angebots im Zeitpunkt der Annahme" },
+  { id: "v10", cat: "vertragsschluss", q: "Gelten diese 6 Voraussetzungen nur für Verpflichtungsgeschäfte?", a: "Nein – auch für Verfügungsverträge wie die Einigung nach § 929 S. 1 BGB" },
+  { id: "v11", cat: "vertragsschluss", q: "Essentialia negotii eines Kaufvertrags / Mietvertrags?", a: "Kaufvertrag: Kaufsache + Kaufpreis. Mietvertrag: Mietsache + Mietpreis + Mietbeginn + Mietzeit" },
+  { id: "v12", cat: "vertragsschluss", q: "Invitatio ad offerendum?", a: "Einladung zur Abgabe eines Angebots – kein Bindungswille, der Erklärende behält sich die letzte Entscheidung vor (z. B. Schaufensterauslagen, Zeitungsannoncen)" },
+  { id: "v13", cat: "vertragsschluss", q: "Was passiert bei einer „Annahme“ mit Änderungen/Einschränkungen?", a: "Das ist keine Annahme, sondern eine Ablehnung verbunden mit einem neuen Gegenangebot (§ 150 Abs. 2 BGB) – auch bei Abweichungen in Nebenpunkten" },
+  { id: "v14", cat: "vertragsschluss", q: "Kann Schweigen eine Annahme darstellen?", a: "Grundsätzlich nein. Ausnahmen nur, wenn das Gesetz das vorsieht oder die Parteien es vorher vereinbart haben" },
+  { id: "v15", cat: "vertragsschluss", q: "Wann ist der Zugang der Annahme entbehrlich?", a: "§ 151 BGB: wenn nach Verkehrssitte kein Zugang zu erwarten ist, oder der Antragende darauf verzichtet hat. § 152 BGB: bei notarieller Beurkundung" },
+  { id: "v16", cat: "vertragsschluss", q: "Versteckter Dissens (§ 155 BGB)?", a: "Beide Parteien glauben, sich geeinigt zu haben, obwohl ein Nebenpunkt offen blieb – Vertrag kommt trotzdem wirksam zustande, Lücke wird gesetzlich gefüllt" },
+  { id: "v17", cat: "vertragsschluss", q: "Offener Dissens (§ 154 Abs. 1 BGB)?", a: "Beide Parteien wissen, dass ein Punkt noch offen ist – im Zweifel kommt der Vertrag **nicht** zustande, bis auch dieser Punkt geklärt ist" },
+  { id: "v18", cat: "vertragsschluss", q: "Wann erlischt ein Angebot?", a: "Durch Ablehnung (§ 146, 1. Alt. BGB) oder durch Zeitablauf, wenn nicht rechtzeitig angenommen wird (§ 146, 2. Alt., §§ 147–148 BGB)" },
+  { id: "v19", cat: "vertragsschluss", q: "Rechtzeitige Annahme bei Angebot gegenüber Anwesenden/am Telefon?", a: "Nur, wenn die Annahme **sofort** erfolgt (§ 147 Abs. 1 BGB)" },
+  { id: "v20", cat: "vertragsschluss", q: "Rechtzeitige Annahme bei Angebot gegenüber Abwesenden (ohne gesetzte Frist)?", a: "Bis zu dem Zeitpunkt, zu dem der Antragende unter regelmäßigen Umständen mit dem Eingang der Antwort rechnen durfte (§ 147 Abs. 2 BGB) – abhängig von den Umständen des Einzelfalls" },
+  { id: "v21", cat: "vertragsschluss", q: "Was gilt eine verspätete Annahme gemäß § 150 Abs. 1 BGB?", a: "Sie gilt als **neues Angebot**, das der ursprünglich Antragende annehmen oder ablehnen kann" },
+  { id: "v22", cat: "vertragsschluss", q: "§ 153 BGB – Tod/Geschäftsunfähigkeit des Anbietenden?", a: "Das Angebot bleibt grundsätzlich annahmefähig (ggf. gegenüber Erben/Betreuer) – außer das Geschäft ist dadurch erkennbar wirtschaftlich sinnlos geworden" },
+  { id: "v23", cat: "vertragsschluss", q: "§ 149 BGB – Fiktion bei verspäteter Annahme?", a: "Wurde die Annahme rechtzeitig abgesandt (erkennbar für den Empfänger) und unterlässt dieser eine unverzügliche Verspätungsanzeige, gilt die Annahme als **nicht verspätet** – der Vertrag kommt doch zustande" }
 ];
 
-const CARD_BY_ID = Object.fromEntries(CARD_DATA.map((c) => [c.id, c]));
-const CAT_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.id, c.label]));
+var CARD_BY_ID = {};
+CARD_DATA.forEach(function (c) { CARD_BY_ID[c.id] = c; });
+var CAT_LABEL = {};
+CATEGORIES.forEach(function (c) { CAT_LABEL[c.id] = c.label; });
 
-const PROGRESS_KEY = "abr-fc-progress-v1";
-const SETTINGS_KEY = "abr-fc-settings-v1";
-const DAY_MS = 24 * 60 * 60 * 1000;
-const INTERVAL_DAYS = [0, 1, 2, 4, 7, 14, 30]; // index = box
-const MASTERED_BOX = 5;
+var PROGRESS_KEY = "abr_fc_progress_v1";
+var SETTINGS_KEY = "abr_fc_settings_v1";
+var DAY_MS = 24 * 60 * 60 * 1000;
+var INTERVAL_DAYS = [0, 1, 2, 4, 7, 14, 30];
+var MASTERED_BOX = 5;
+
+/* ---------- storage (plain browser localStorage) ---------- */
+function loadJSON(key, fallback) {
+  try {
+    var raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error("Storage read error", e);
+    return fallback;
+  }
+}
+function saveJSON(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch (e) {
+    console.error("Storage write error", e);
+    return false;
+  }
+}
+function defaultProgressFor() {
+  return { box: 0, due: Date.now(), seen: 0, correct: 0 };
+}
+
+/* ---------- state ---------- */
+var state = {
+  loading: true,
+  progress: {},
+  selectedCats: CATEGORIES.map(function (c) { return c.id; }),
+  view: "practice",
+  queue: [],
+  flipped: false,
+  sessionAnswered: 0,
+  sessionCorrect: 0,
+  showSettings: false,
+  confirmReset: false,
+  expandedBrowse: {},
+  storageOK: true
+};
 
 function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
   }
   return a;
 }
 
-function defaultProgressFor(id) {
-  return { box: 0, due: Date.now(), seen: 0, correct: 0 };
-}
+function init() {
+  var stored = loadJSON(PROGRESS_KEY, null);
+  if (stored === null) {
+    // localStorage may be unavailable (e.g. sandboxed preview) - detect via test write
+    state.storageOK = saveJSON(PROGRESS_KEY, {});
+    stored = {};
+  }
+  var merged = Object.assign({}, stored);
+  CARD_DATA.forEach(function (c) {
+    if (!merged[c.id]) merged[c.id] = defaultProgressFor();
+  });
+  state.progress = merged;
+  saveJSON(PROGRESS_KEY, merged);
 
-function RichText({ text, className }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
-  return (
-    <span className={className}>
-      {parts.map((p, i) =>
-        p.startsWith("**") && p.endsWith("**") ? (
-          <strong key={i} className="font-semibold text-slate-900">
-            {p.slice(2, -2)}
-          </strong>
-        ) : (
-          <React.Fragment key={i}>{p}</React.Fragment>
-        )
-      )}
-    </span>
-  );
-}
-
-function App() {
-  const [loading, setLoading] = useState(true);
-  const [progress, setProgress] = useState({});
-  const [selectedCats, setSelectedCats] = useState(CATEGORIES.map((c) => c.id));
-  const [view, setView] = useState("practice"); // 'practice' | 'browse'
-  const [queue, setQueue] = useState([]);
-  const [flipped, setFlipped] = useState(false);
-  const [sessionAnswered, setSessionAnswered] = useState(0);
-  const [sessionCorrect, setSessionCorrect] = useState(0);
-  const [showSettings, setShowSettings] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
-  const [expandedBrowse, setExpandedBrowse] = useState({});
-  const [now, setNow] = useState(Date.now());
-  const reducedMotion = useRef(false);
-
-  useEffect(() => {
-    try {
-      reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    } catch (e) {}
-  }, []);
-
-  // ---- load + merge on mount ----
-  useEffect(() => {
-    (async () => {
-      let stored = {};
-      try {
-        const res = await window.storage.get(PROGRESS_KEY, false);
-        if (res && res.value) stored = JSON.parse(res.value);
-      } catch (e) {
-        stored = {};
-      }
-      let changed = false;
-      const merged = { ...stored };
-      for (const card of CARD_DATA) {
-        if (!merged[card.id]) {
-          merged[card.id] = defaultProgressFor(card.id);
-          changed = true;
-        }
-      }
-      setProgress(merged);
-      if (changed) {
-        try {
-          await window.storage.set(PROGRESS_KEY, JSON.stringify(merged), false);
-        } catch (e) {
-          console.error("Storage error", e);
-        }
-      }
-
-      let settings = null;
-      try {
-        const res = await window.storage.get(SETTINGS_KEY, false);
-        if (res && res.value) settings = JSON.parse(res.value);
-      } catch (e) {}
-      if (settings && Array.isArray(settings.selectedCats) && settings.selectedCats.length > 0) {
-        setSelectedCats(settings.selectedCats);
-      }
-
-      setLoading(false);
-    })();
-  }, []);
-
-  const persistProgress = useCallback(async (next) => {
-    try {
-      await window.storage.set(PROGRESS_KEY, JSON.stringify(next), false);
-    } catch (e) {
-      console.error("Storage error", e);
-    }
-  }, []);
-
-  const persistSettings = useCallback(async (cats) => {
-    try {
-      await window.storage.set(SETTINGS_KEY, JSON.stringify({ selectedCats: cats }), false);
-    } catch (e) {
-      console.error("Storage error", e);
-    }
-  }, []);
-
-  const buildQueue = useCallback(
-    (opts = {}) => {
-      const ignoreDue = !!opts.ignoreDue;
-      const pool = CARD_DATA.filter((c) => selectedCats.includes(c.cat));
-      const due = pool.filter((c) => ignoreDue || (progress[c.id]?.due ?? 0) <= Date.now());
-      setQueue(shuffle(due).map((c) => c.id));
-      setFlipped(false);
-      setSessionAnswered(0);
-      setSessionCorrect(0);
-    },
-    [progress, selectedCats]
-  );
-
-  // build initial queue once progress is loaded
-  useEffect(() => {
-    if (!loading) buildQueue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]);
-
-  function toggleCategory(id) {
-    setSelectedCats((prev) => {
-      const next = prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id];
-      const finalCats = next.length === 0 ? prev : next;
-      persistSettings(finalCats);
-      return finalCats;
-    });
+  var settings = loadJSON(SETTINGS_KEY, null);
+  if (settings && Array.isArray(settings.selectedCats) && settings.selectedCats.length > 0) {
+    state.selectedCats = settings.selectedCats;
   }
 
-  useEffect(() => {
-    if (!loading) buildQueue();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCats]);
+  state.loading = false;
+  buildQueue();
+  render();
+}
 
-  const currentId = queue[0];
-  const currentCard = currentId ? CARD_BY_ID[currentId] : null;
+function buildQueue(opts) {
+  opts = opts || {};
+  var ignoreDue = !!opts.ignoreDue;
+  var now = Date.now();
+  var pool = CARD_DATA.filter(function (c) { return state.selectedCats.indexOf(c.cat) !== -1; });
+  var due = pool.filter(function (c) {
+    return ignoreDue || (state.progress[c.id] && state.progress[c.id].due <= now);
+  });
+  state.queue = shuffle(due).map(function (c) { return c.id; });
+  state.flipped = false;
+  state.sessionAnswered = 0;
+  state.sessionCorrect = 0;
+}
 
-  function answer(correct) {
-    if (!currentId) return;
-    const prev = progress[currentId] || defaultProgressFor(currentId);
-    let box = correct ? Math.min(prev.box + 1, INTERVAL_DAYS.length - 1) : 0;
-    const due = correct ? Date.now() + INTERVAL_DAYS[box] * DAY_MS : Date.now();
-    const nextEntry = {
-      box,
-      due,
-      seen: prev.seen + 1,
-      correct: prev.correct + (correct ? 1 : 0),
-    };
-    const nextProgress = { ...progress, [currentId]: nextEntry };
-    setProgress(nextProgress);
-    persistProgress(nextProgress);
+function toggleCategory(id) {
+  var idx = state.selectedCats.indexOf(id);
+  var next = state.selectedCats.slice();
+  if (idx === -1) next.push(id); else next.splice(idx, 1);
+  if (next.length === 0) return; // keep at least one selected
+  state.selectedCats = next;
+  saveJSON(SETTINGS_KEY, { selectedCats: next });
+  buildQueue();
+  render();
+}
 
-    setSessionAnswered((n) => n + 1);
-    if (correct) setSessionCorrect((n) => n + 1);
+function answerCard(correct) {
+  var currentId = state.queue[0];
+  if (!currentId) return;
+  var prev = state.progress[currentId] || defaultProgressFor();
+  var box = correct ? Math.min(prev.box + 1, INTERVAL_DAYS.length - 1) : 0;
+  var due = correct ? Date.now() + INTERVAL_DAYS[box] * DAY_MS : Date.now();
+  var nextEntry = { box: box, due: due, seen: prev.seen + 1, correct: prev.correct + (correct ? 1 : 0) };
+  state.progress[currentId] = nextEntry;
+  saveJSON(PROGRESS_KEY, state.progress);
 
-    setQueue((q) => {
-      const rest = q.slice(1);
-      if (!correct) {
-        const insertAt = Math.min(rest.length, 3 + Math.floor(Math.random() * 3));
-        rest.splice(insertAt, 0, currentId);
-      }
-      return rest;
-    });
-    setFlipped(false);
+  state.sessionAnswered += 1;
+  if (correct) state.sessionCorrect += 1;
+
+  var rest = state.queue.slice(1);
+  if (!correct) {
+    var insertAt = Math.min(rest.length, 3 + Math.floor(Math.random() * 3));
+    rest.splice(insertAt, 0, currentId);
+  }
+  state.queue = rest;
+  state.flipped = false;
+  render();
+}
+
+/* ---------- markdown-lite bold ---------- */
+function richHTML(text) {
+  var escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+
+/* ---------- tiny inline icons ---------- */
+function icon(name, size, extraAttrs) {
+  size = size || 16;
+  extraAttrs = extraAttrs || "";
+  var inner = "";
+  if (name === "clock") inner = '<circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline>';
+  else if (name === "check-circle") inner = '<circle cx="12" cy="12" r="9"></circle><polyline points="8 12 11 15.5 16 9"></polyline>';
+  else if (name === "layers") inner = '<polygon points="12 3 21 8.5 12 14 3 8.5 12 3"></polygon><polyline points="3 14 12 19.5 21 14"></polyline>';
+  else if (name === "rotate-ccw") inner = '<path d="M3.5 12a8.5 8.5 0 1 0 2.9-6.4"></path><polyline points="3.5 4 3.5 9 8.5 9"></polyline>';
+  else if (name === "check") inner = '<polyline points="20 6 9 17 4 12"></polyline>';
+  else if (name === "chevron-down") inner = '<polyline points="6 9 12 15 18 9"></polyline>';
+  else if (name === "chevron-up") inner = '<polyline points="6 15 12 9 18 15"></polyline>';
+  return '<svg class="icon" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' + extraAttrs + '>' + inner + '</svg>';
+}
+
+/* ---------- render ---------- */
+function render() {
+  var root = document.getElementById("root");
+  var now = Date.now();
+
+  var dueCount = CARD_DATA.filter(function (c) {
+    return state.selectedCats.indexOf(c.cat) !== -1 && state.progress[c.id] && state.progress[c.id].due <= now;
+  }).length;
+  var masteredCount = CARD_DATA.filter(function (c) {
+    return state.selectedCats.indexOf(c.cat) !== -1 && state.progress[c.id] && state.progress[c.id].box >= MASTERED_BOX;
+  }).length;
+  var totalInSelection = CARD_DATA.filter(function (c) { return state.selectedCats.indexOf(c.cat) !== -1; }).length;
+
+  var html = '<div class="shell">';
+
+  // header
+  html += '<header>';
+  html += '  <div class="header-row">';
+  html += '    <div><h1 class="app-title serif">Karteikarten</h1><p class="app-subtitle">ABR &middot; bis es sitzt</p></div>';
+  html += '    <button class="icon-btn" data-action="toggle-settings" aria-label="Einstellungen">' + gearSVG() + '</button>';
+  html += '  </div>';
+  html += '  <div class="tabs">';
+  html += '    <button class="tab-btn ' + (state.view === "practice" ? "active" : "") + '" data-action="set-view" data-view="practice">Üben</button>';
+  html += '    <button class="tab-btn ' + (state.view === "browse" ? "active" : "") + '" data-action="set-view" data-view="browse">Alle Karten</button>';
+  html += '  </div>';
+  html += '</header>';
+
+  // settings panel
+  if (state.showSettings) {
+    html += '<div class="settings-panel">';
+    html += '  <p class="settings-label">Fortschritt</p>';
+    if (!state.confirmReset) {
+      html += '  <button class="link-danger" data-action="reset-ask">Fortschritt zurücksetzen</button>';
+    } else {
+      html += '  <div class="confirm-row"><span>Wirklich alle Karten zurücksetzen?</span>';
+      html += '    <button class="btn-small-danger" data-action="reset-confirm">Ja, zurücksetzen</button>';
+      html += '    <button class="btn-small-neutral" data-action="reset-cancel">Abbrechen</button></div>';
+    }
+    if (!state.storageOK) {
+      html += '  <p style="font-size:12px;color:#9f1239;margin-top:10px;">Hinweis: Der Browser blockiert hier lokalen Speicher (z. B. in dieser Vorschau) &ndash; Fortschritt wird gerade nicht gespeichert. Als heruntergeladene Datei bzw. gehostet funktioniert es normal.</p>';
+    }
+    html += '</div>';
   }
 
-  const dueCountTotal = CARD_DATA.filter(
-    (c) => selectedCats.includes(c.cat) && (progress[c.id]?.due ?? 0) <= now
-  ).length;
-  const masteredCount = CARD_DATA.filter(
-    (c) => selectedCats.includes(c.cat) && (progress[c.id]?.box ?? 0) >= MASTERED_BOX
-  ).length;
-  const totalInSelection = CARD_DATA.filter((c) => selectedCats.includes(c.cat)).length;
+  // category filter
+  html += '<div class="cat-filter">';
+  CATEGORIES.forEach(function (c) {
+    var active = state.selectedCats.indexOf(c.id) !== -1;
+    html += '<button class="cat-chip ' + (active ? "active" : "") + '" data-action="toggle-cat" data-cat="' + c.id + '">' + c.label + '</button>';
+  });
+  html += '</div>';
 
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 30000);
-    return () => clearInterval(t);
-  }, []);
+  // stats bar
+  html += '<div class="stats-bar">';
+  html += '  <span class="stat">' + icon("clock", 14) + ' Fällig: ' + dueCount + '</span>';
+  html += '  <span class="stat">' + icon("check-circle", 14) + ' Sitzt: ' + masteredCount + '/' + totalInSelection + '</span>';
+  html += '  <span class="stat">' + icon("layers", 14) + ' ' + totalInSelection + '</span>';
+  html += '</div>';
 
-  return (
-    <div className="min-h-screen bg-stone-100 flex flex-col items-center font-sans">
-      <div className="w-full max-w-md bg-stone-100 min-h-screen flex flex-col shadow-xl">
-        {/* Header */}
-        <header className="bg-slate-900 text-stone-50 px-5 pt-5 pb-4 border-b-4 border-amber-600">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="font-serif text-2xl tracking-tight">Karteikarten</h1>
-              <p className="text-amber-300/90 text-xs mt-0.5 font-sans">ABR · bis es sitzt</p>
-            </div>
-            <button
-              onClick={() => setShowSettings((s) => !s)}
-              aria-label="Einstellungen"
-              className="p-2 rounded-full text-stone-300 hover:text-white hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            >
-              <Settings2 size={20} />
-            </button>
-          </div>
+  // main
+  html += '<main>';
+  if (state.loading) {
+    html += '<div class="loading-msg">Lade Karten &hellip;</div>';
+  } else if (totalInSelection === 0) {
+    html += '<div class="loading-msg">Wähle mindestens eine Kategorie oben aus.</div>';
+  } else if (state.view === "browse") {
+    html += renderBrowse();
+  } else if (!state.queue[0]) {
+    html += renderEmptyOrDone();
+  } else {
+    html += renderPracticeCard();
+  }
+  html += '</main>';
 
-          <div className="flex gap-2 mt-4">
-            <button
-              onClick={() => setView("practice")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 ${
-                view === "practice" ? "bg-amber-600 text-white" : "bg-white/10 text-stone-200"
-              }`}
-            >
-              Üben
-            </button>
-            <button
-              onClick={() => setView("browse")}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400 ${
-                view === "browse" ? "bg-amber-600 text-white" : "bg-white/10 text-stone-200"
-              }`}
-            >
-              Alle Karten
-            </button>
-          </div>
-        </header>
-
-        {showSettings && (
-          <div className="bg-white border-b border-stone-200 px-5 py-4">
-            <p className="text-xs uppercase tracking-wide text-stone-500 font-sans mb-2">Fortschritt</p>
-            {!confirmReset ? (
-              <button
-                onClick={() => setConfirmReset(true)}
-                className="text-sm text-rose-700 underline decoration-rose-300 underline-offset-2"
-              >
-                Fortschritt zurücksetzen
-              </button>
-            ) : (
-              <div className="flex items-center gap-3 text-sm">
-                <span className="text-stone-700">Wirklich alle Karten zurücksetzen?</span>
-                <button
-                  onClick={async () => {
-                    const reset = {};
-                    for (const c of CARD_DATA) reset[c.id] = defaultProgressFor(c.id);
-                    setProgress(reset);
-                    await persistProgress(reset);
-                    setConfirmReset(false);
-                    buildQueue();
-                  }}
-                  className="px-2 py-1 rounded bg-rose-700 text-white text-xs font-medium"
-                >
-                  Ja, zurücksetzen
-                </button>
-                <button
-                  onClick={() => setConfirmReset(false)}
-                  className="px-2 py-1 rounded bg-stone-200 text-stone-700 text-xs font-medium"
-                >
-                  Abbrechen
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Category filter */}
-        <div className="px-5 py-3 bg-stone-100 flex gap-2 overflow-x-auto">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => toggleCategory(c.id)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-slate-400 ${
-                selectedCats.includes(c.id)
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-stone-600 border-stone-300"
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Stats */}
-        <div className="px-5 py-2 bg-white border-y border-stone-200 flex items-center justify-between text-sm font-mono text-stone-700">
-          <span className="flex items-center gap-1.5">
-            <Clock size={14} className="text-amber-700" />
-            Fällig: {dueCountTotal}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 size={14} className="text-emerald-700" />
-            Sitzt: {masteredCount}/{totalInSelection}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Layers size={14} className="text-slate-500" />
-            {totalInSelection}
-          </span>
-        </div>
-
-        {/* Main content */}
-        <main className="flex-1 px-5 py-6 flex flex-col">
-          {loading ? (
-            <div className="flex-1 flex items-center justify-center text-stone-400 text-sm">
-              Lade Karten …
-            </div>
-          ) : totalInSelection === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-center text-stone-500 text-sm px-6">
-              Wähle mindestens eine Kategorie oben aus.
-            </div>
-          ) : view === "browse" ? (
-            <BrowseList
-              cards={CARD_DATA.filter((c) => selectedCats.includes(c.cat))}
-              expanded={expandedBrowse}
-              setExpanded={setExpandedBrowse}
-            />
-          ) : !currentCard ? (
-            <EmptyOrDoneState
-              sessionAnswered={sessionAnswered}
-              sessionCorrect={sessionCorrect}
-              onPracticeAnyway={() => buildQueue({ ignoreDue: true })}
-              onRefresh={() => buildQueue()}
-            />
-          ) : (
-            <PracticeCard
-              card={currentCard}
-              flipped={flipped}
-              onFlip={() => setFlipped(true)}
-              onAnswer={answer}
-              remaining={queue.length}
-              categoryLabel={CAT_LABEL[currentCard.cat]}
-              reducedMotion={reducedMotion.current}
-              progressInfo={progress[currentCard.id]}
-            />
-          )}
-        </main>
-      </div>
-    </div>
-  );
+  html += '</div>';
+  root.innerHTML = html;
 }
 
-function PracticeCard({ card, flipped, onFlip, onAnswer, remaining, categoryLabel, reducedMotion, progressInfo }) {
-  const box = progressInfo?.box ?? 0;
-  const seen = progressInfo?.seen ?? 0;
-  return (
-    <div className="flex-1 flex flex-col">
-      <p className="text-xs font-mono text-stone-400 mb-1 text-center">
-        {remaining} {remaining === 1 ? "Karte" : "Karten"} in dieser Runde
-      </p>
-      <p className="text-[10px] font-mono text-stone-300 mb-3 text-center">
-        Box: {box} · gesehen: {seen}×
-      </p>
-
-      <div
-        className="mx-auto w-full"
-        style={{ perspective: "1200px" }}
-      >
-        <div
-          onClick={() => !flipped && onFlip()}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if ((e.key === "Enter" || e.key === " ") && !flipped) onFlip();
-          }}
-          className="relative w-full focus:outline-none"
-          style={{
-            minHeight: "260px",
-            transformStyle: "preserve-3d",
-            transition: reducedMotion ? "none" : "transform 0.5s",
-            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-            cursor: flipped ? "default" : "pointer",
-          }}
-        >
-          {/* Front */}
-          <div
-            className="absolute inset-0 rounded-xl border border-stone-300 bg-amber-50 shadow-md flex flex-col p-5"
-            style={{ backfaceVisibility: "hidden" }}
-          >
-            <CardChrome label={categoryLabel} />
-            <div className="flex-1 flex items-center justify-center text-center px-2">
-              <p className="font-serif text-lg text-slate-900 leading-snug">{card.q}</p>
-            </div>
-            <p className="text-center text-xs text-stone-400 font-sans mt-2">Tippen zum Umdrehen</p>
-          </div>
-
-          {/* Back */}
-          <div
-            className="absolute inset-0 rounded-xl border border-stone-300 bg-stone-50 shadow-md flex flex-col p-5"
-            style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
-          >
-            <CardChrome label={categoryLabel} />
-            <div className="flex-1 flex items-center justify-center text-center px-1 overflow-y-auto">
-              <RichText text={card.a} className="font-serif text-base text-slate-800 leading-relaxed" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 flex gap-3">
-        {!flipped ? (
-          <button
-            onClick={onFlip}
-            className="w-full py-3 rounded-lg bg-slate-900 text-white font-medium focus:outline-none focus:ring-2 focus:ring-slate-500 active:scale-95 transition-transform"
-          >
-            Antwort zeigen
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={() => onAnswer(false)}
-              className="flex-1 py-3 rounded-lg border-2 border-rose-700 text-rose-700 font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-rose-400 active:scale-95 transition-transform"
-            >
-              <RotateCcw size={16} />
-              Nochmal
-            </button>
-            <button
-              onClick={() => onAnswer(true)}
-              className="flex-1 py-3 rounded-lg bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-400 active:scale-95 transition-transform"
-            >
-              <Check size={16} />
-              Kann ich
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
+function gearSVG() {
+  return '<svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+    '<circle cx="12" cy="12" r="3"></circle>' +
+    '<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>' +
+    '</svg>';
 }
 
-function CardChrome({ label }) {
-  return (
-    <div className="flex items-center justify-between mb-3">
-      <span
-        className="inline-block rounded-full bg-white border border-stone-300"
-        style={{ width: 14, height: 14 }}
-        aria-hidden="true"
-      />
-      <span className="text-[10px] font-mono uppercase tracking-wider text-stone-500">{label}</span>
-    </div>
-  );
+function renderPracticeCard() {
+  var currentId = state.queue[0];
+  var card = CARD_BY_ID[currentId];
+  var remaining = state.queue.length;
+  var html = "";
+  html += '<p class="queue-count">' + remaining + (remaining === 1 ? ' Karte' : ' Karten') + ' in dieser Runde</p>';
+  html += '<div class="card-outer">';
+  html += '  <div class="card-inner ' + (state.flipped ? "flipped no-flip-cursor" : "") + '" data-action="flip-card" tabindex="0" role="button">';
+  html += '    <div class="card-face card-front">';
+  html += '      <div class="card-chrome"><span class="hole-punch"></span><span class="cat-label">' + CAT_LABEL[card.cat] + '</span></div>';
+  html += '      <div class="card-body"><p class="card-q">' + richHTML(card.q) + '</p></div>';
+  html += '      <p class="card-hint">Tippen zum Umdrehen</p>';
+  html += '    </div>';
+  html += '    <div class="card-face card-back">';
+  html += '      <div class="card-chrome"><span class="hole-punch"></span><span class="cat-label">' + CAT_LABEL[card.cat] + '</span></div>';
+  html += '      <div class="card-body"><p class="card-a">' + richHTML(card.a) + '</p></div>';
+  html += '    </div>';
+  html += '  </div>';
+  html += '</div>';
+  html += '<div class="action-row">';
+  if (!state.flipped) {
+    html += '<button class="btn btn-primary" data-action="flip-card">Antwort zeigen</button>';
+  } else {
+    html += '<button class="btn btn-wrong" data-action="answer" data-correct="false">' + icon("rotate-ccw", 16) + ' Nochmal</button>';
+    html += '<button class="btn btn-correct" data-action="answer" data-correct="true">' + icon("check", 16) + ' Kann ich</button>';
+  }
+  html += '</div>';
+  return html;
 }
 
-function EmptyOrDoneState({ sessionAnswered, sessionCorrect, onPracticeAnyway, onRefresh }) {
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-      {sessionAnswered > 0 ? (
-        <>
-          <p className="font-serif text-xl text-slate-900 mb-1">Runde geschafft 🎉</p>
-          <p className="text-stone-500 text-sm mb-6">
-            {sessionCorrect} von {sessionAnswered} richtig
-          </p>
-        </>
-      ) : (
-        <>
-          <p className="font-serif text-xl text-slate-900 mb-1">Für jetzt nichts fällig</p>
-          <p className="text-stone-500 text-sm mb-6">Gut gemacht – schau später wieder vorbei.</p>
-        </>
-      )}
-      <div className="flex flex-col gap-2 w-full max-w-xs">
-        <button
-          onClick={onPracticeAnyway}
-          className="py-2.5 rounded-lg border border-stone-300 text-stone-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-slate-400"
-        >
-          Trotzdem üben
-        </button>
-        <button
-          onClick={onRefresh}
-          className="py-2.5 rounded-lg text-stone-400 text-xs"
-        >
-          Aktualisieren
-        </button>
-      </div>
-    </div>
-  );
+function renderEmptyOrDone() {
+  var html = '<div class="empty-state">';
+  if (state.sessionAnswered > 0) {
+    html += '<p class="empty-title">Runde geschafft &#127881;</p>';
+    html += '<p class="empty-sub">' + state.sessionCorrect + ' von ' + state.sessionAnswered + ' richtig</p>';
+  } else {
+    html += '<p class="empty-title">Für jetzt nichts fällig</p>';
+    html += '<p class="empty-sub">Gut gemacht &ndash; schau später wieder vorbei.</p>';
+  }
+  html += '<div class="empty-actions">';
+  html += '<button class="btn-outline" data-action="practice-anyway">Trotzdem üben</button>';
+  html += '<button class="btn-ghost" data-action="refresh-queue">Aktualisieren</button>';
+  html += '</div></div>';
+  return html;
 }
 
-function BrowseList({ cards, expanded, setExpanded }) {
-  const byCat = {};
-  for (const c of cards) {
-    if (!byCat[c.cat]) byCat[c.cat] = [];
+function renderBrowse() {
+  var byCat = {};
+  var order = [];
+  CARD_DATA.forEach(function (c) {
+    if (state.selectedCats.indexOf(c.cat) === -1) return;
+    if (!byCat[c.cat]) { byCat[c.cat] = []; order.push(c.cat); }
     byCat[c.cat].push(c);
-  }
-  return (
-    <div className="space-y-6">
-      {Object.entries(byCat).map(([catId, catCards]) => (
-        <div key={catId}>
-          <p className="text-xs uppercase tracking-wide text-amber-700 font-sans font-semibold mb-2">
-            {CAT_LABEL[catId]}
-          </p>
-          <div className="space-y-2">
-            {catCards.map((c) => {
-              const isOpen = !!expanded[c.id];
-              return (
-                <div key={c.id} className="rounded-lg border border-stone-200 bg-white overflow-hidden">
-                  <button
-                    onClick={() => setExpanded((e) => ({ ...e, [c.id]: !e[c.id] }))}
-                    className="w-full flex items-center justify-between px-4 py-3 text-left focus:outline-none focus:ring-2 focus:ring-inset focus:ring-slate-400"
-                  >
-                    <span className="font-serif text-sm text-slate-900 pr-3">{c.q}</span>
-                    {isOpen ? (
-                      <ChevronUp size={16} className="text-stone-400 shrink-0" />
-                    ) : (
-                      <ChevronDown size={16} className="text-stone-400 shrink-0" />
-                    )}
-                  </button>
-                  {isOpen && (
-                    <div className="px-4 pb-3 border-t border-stone-100 pt-2">
-                      <RichText text={c.a} className="text-sm text-stone-700 leading-relaxed" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  });
+  var html = "";
+  order.forEach(function (catId) {
+    html += '<div class="browse-group">';
+    html += '<p class="browse-group-label">' + CAT_LABEL[catId] + '</p>';
+    byCat[catId].forEach(function (c) {
+      var isOpen = !!state.expandedBrowse[c.id];
+      html += '<div class="browse-item">';
+      html += '  <button class="browse-item-q" data-action="toggle-browse" data-id="' + c.id + '">';
+      html += '    <span class="qtext">' + richHTML(c.q) + '</span>';
+      html += '    <span class="chev">' + icon(isOpen ? "chevron-up" : "chevron-down", 16) + '</span>';
+      html += '  </button>';
+      if (isOpen) {
+        html += '  <div class="browse-item-a"><p>' + richHTML(c.a) + '</p></div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+  });
+  return html;
 }
 
-const root = ReactDOM.createRoot(document.getElementById("root"));
-root.render(<App />);
+/* ---------- event delegation ---------- */
+document.addEventListener("click", function (e) {
+  var el = e.target.closest("[data-action]");
+  if (!el) return;
+  var action = el.getAttribute("data-action");
+
+  if (action === "toggle-settings") { state.showSettings = !state.showSettings; state.confirmReset = false; render(); }
+  else if (action === "set-view") { state.view = el.getAttribute("data-view"); render(); }
+  else if (action === "toggle-cat") { toggleCategory(el.getAttribute("data-cat")); }
+  else if (action === "reset-ask") { state.confirmReset = true; render(); }
+  else if (action === "reset-cancel") { state.confirmReset = false; render(); }
+  else if (action === "reset-confirm") {
+    var reset = {};
+    CARD_DATA.forEach(function (c) { reset[c.id] = defaultProgressFor(); });
+    state.progress = reset;
+    saveJSON(PROGRESS_KEY, reset);
+    state.confirmReset = false;
+    buildQueue();
+    render();
+  }
+  else if (action === "flip-card") { if (!state.flipped) { state.flipped = true; render(); } }
+  else if (action === "answer") { answerCard(el.getAttribute("data-correct") === "true"); }
+  else if (action === "practice-anyway") { buildQueue({ ignoreDue: true }); render(); }
+  else if (action === "refresh-queue") { buildQueue(); render(); }
+  else if (action === "toggle-browse") {
+    var id = el.getAttribute("data-id");
+    state.expandedBrowse[id] = !state.expandedBrowse[id];
+    render();
+  }
+});
+
+document.addEventListener("keydown", function (e) {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  var el = e.target.closest('[data-action="flip-card"]');
+  if (el && !state.flipped) { e.preventDefault(); state.flipped = true; render(); }
+});
+
+init();
 </script>
 </body>
 </html>
