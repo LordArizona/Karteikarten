@@ -159,7 +159,11 @@ var CATEGORIES = [
   { id: "bereicherung", label: "§105 II & Bereicherungsrecht" },
   { id: "zugang", label: "§ 130 – Zugang" },
   { id: "auslegung", label: "Auslegung von WE" },
-  { id: "vertragsschluss", label: "Zustandekommen von Verträgen" }
+  { id: "vertragsschluss", label: "Zustandekommen von Verträgen" },
+  { id: "rechtsfaehigkeit", label: "Rechtsfähigkeit" },
+  { id: "geschaeftsfaehigkeit", label: "Geschäftsfähigkeit" },
+  { id: "minderjaehrige", label: "Minderjährige (§§ 106–111)" },
+  { id: "fristen", label: "Fristberechnung" }
 ];
 
 var CARD_DATA = [
@@ -259,7 +263,70 @@ var CARD_DATA = [
   { id: "v20", cat: "vertragsschluss", q: "Rechtzeitige Annahme bei Angebot gegenüber Abwesenden (ohne gesetzte Frist)?", a: "Bis zu dem Zeitpunkt, zu dem der Antragende unter regelmäßigen Umständen mit dem Eingang der Antwort rechnen durfte (§ 147 Abs. 2 BGB) – abhängig von den Umständen des Einzelfalls" },
   { id: "v21", cat: "vertragsschluss", q: "Was gilt eine verspätete Annahme gemäß § 150 Abs. 1 BGB?", a: "Sie gilt als **neues Angebot**, das der ursprünglich Antragende annehmen oder ablehnen kann" },
   { id: "v22", cat: "vertragsschluss", q: "§ 153 BGB – Tod/Geschäftsunfähigkeit des Anbietenden?", a: "Das Angebot bleibt grundsätzlich annahmefähig (ggf. gegenüber Erben/Betreuer) – außer das Geschäft ist dadurch erkennbar wirtschaftlich sinnlos geworden" },
-  { id: "v23", cat: "vertragsschluss", q: "§ 149 BGB – Fiktion bei verspäteter Annahme?", a: "Wurde die Annahme rechtzeitig abgesandt (erkennbar für den Empfänger) und unterlässt dieser eine unverzügliche Verspätungsanzeige, gilt die Annahme als **nicht verspätet** – der Vertrag kommt doch zustande" }
+  { id: "v23", cat: "vertragsschluss", q: "§ 149 BGB – Fiktion bei verspäteter Annahme?", a: "Wurde die Annahme rechtzeitig abgesandt (erkennbar für den Empfänger) und unterlässt dieser eine unverzügliche Verspätungsanzeige, gilt die Annahme als **nicht verspätet** – der Vertrag kommt doch zustande" },
+
+  // --- Rechtsfähigkeit ---
+  { id: "rf1", cat: "rechtsfaehigkeit", q: "Definition Rechtsfähigkeit?", a: "Die Fähigkeit, **Träger von Rechten und Pflichten** zu sein (z. B. Eigentümer, Gläubiger, Schuldner, Erbe)" },
+  { id: "rf2", cat: "rechtsfaehigkeit", q: "Die drei Arten rechtsfähiger Subjekte (§ 14 Abs. 1 BGB)?", a: "**Natürliche Personen**, **juristische Personen**, **rechtsfähige Personengesellschaften**" },
+  { id: "rf3", cat: "rechtsfaehigkeit", q: "§ 1 BGB – Beginn und Ende der Rechtsfähigkeit des Menschen?", a: "Beginn: **Vollendung der Geburt**. Ende: **Tod**. Gilt ausnahmslos für alle Menschen, unabhängig von Alter oder geistigem Zustand" },
+  { id: "rf4", cat: "rechtsfaehigkeit", q: "Ist der ungeborene Mensch („nasciturus“) rechtsfähig?", a: "**Nein**. § 1923 Abs. 2 BGB ist keine Ausnahme, sondern **fingiert** nur einen früheren Geburtszeitpunkt – wird das Kind nicht lebend geboren, kann es nicht erben" },
+  { id: "rf5", cat: "rechtsfaehigkeit", q: "Juristische Personen – Beispiele aus dem Privatrecht?", a: "e.V. (§ 21 BGB), GmbH (§ 13 Abs. 1 GmbHG), AG (§ 1 AktG), rechtsfähige Stiftung (§ 80 BGB)" },
+  { id: "rf6", cat: "rechtsfaehigkeit", q: "Rechtsfähige Personengesellschaften – Beispiele?", a: "OHG (§ 124 Abs. 1 HGB), KG (§§ 161, 124 Abs. 1 HGB), GbR (§§ 705 ff. BGB)" },
+  { id: "rf7", cat: "rechtsfaehigkeit", q: "Juristische Person vs. rechtsfähige Personengesellschaft – Haftung?", a: "Juristische Person: Mitglieder haften **nicht** persönlich (§ 13 Abs. 2 GmbHG). Personengesellschaft: Gesellschafter haften persönlich und grundsätzlich **unbeschränkt** (§ 128 HGB)" },
+  { id: "rf8", cat: "rechtsfaehigkeit", q: "Juristische Person vs. rechtsfähige Personengesellschaft – Bestand und Vertretung?", a: "Juristische Person: unabhängig vom Gesellschafterwechsel, Vertretung auch durch Außenstehende möglich. Personengesellschaft: beides **nicht**" },
+
+  // --- Geschäftsfähigkeit (Grundlagen, §§ 104, 105, 105a) ---
+  { id: "gf1", cat: "geschaeftsfaehigkeit", q: "Definition Geschäftsfähigkeit?", a: "Die Fähigkeit, **Rechtsgeschäfte selbstständig vorzunehmen** – insbesondere selbst wirksame Willenserklärungen abzugeben" },
+  { id: "gf2", cat: "geschaeftsfaehigkeit", q: "Rechtsfähigkeit vs. Geschäftsfähigkeit – Unterschied?", a: "Rechtsfähigkeit: man **kann** Träger von Rechten sein. Geschäftsfähigkeit: man kann das auch **selbst aktiv herbeiführen**. Ein Baby ist rechtsfähig, aber nicht geschäftsfähig" },
+  { id: "gf3", cat: "geschaeftsfaehigkeit", q: "Sind juristische Personen geschäftsfähig?", a: "**Nein** – nur Menschen können geschäftsfähig sein. Juristische Personen und Personengesellschaften handeln durch ihre **Organe** (z. B. § 26 Abs. 1 S. 2 BGB)" },
+  { id: "gf4", cat: "geschaeftsfaehigkeit", q: "§ 104 Nr. 1 und Nr. 2 BGB – wer ist geschäftsunfähig?", a: "Nr. 1: wer das **7. Lebensjahr** noch nicht vollendet hat. Nr. 2: wer sich in einem **dauerhaften** Zustand krankhafter Störung der Geistestätigkeit befindet, der die freie Willensbestimmung ausschließt" },
+  { id: "gf5", cat: "geschaeftsfaehigkeit", q: "§ 104 Nr. 2 BGB vs. § 105 Abs. 2 BGB – Unterschied?", a: "§ 104 Nr. 2: **dauerhafter** Zustand, die Person ist durchgehend geschäftsunfähig. § 105 Abs. 2: **vorübergehender** Zustand (z. B. Volltrunkenheit), nur die einzelne WE ist nichtig" },
+  { id: "gf6", cat: "geschaeftsfaehigkeit", q: "§ 105 Abs. 1 BGB – Rechtsfolge für WE eines Geschäftsunfähigen?", a: "Die Willenserklärung ist **nichtig** (Ausnahme: § 105a BGB)" },
+  { id: "gf7", cat: "geschaeftsfaehigkeit", q: "§ 131 Abs. 1 BGB – WE gegenüber einem Geschäftsunfähigen?", a: "Wird erst mit **Zugang beim gesetzlichen Vertreter** wirksam – Zugang beim Geschäftsunfähigen selbst genügt nie" },
+  { id: "gf8", cat: "geschaeftsfaehigkeit", q: "§ 105a BGB – Voraussetzungen?", a: "(1) Rechtsgeschäft eines **Volljährigen**, (2) der geschäftsunfähig ist (§ 104 Nr. 2), (3) **Geschäft des täglichen Lebens**, (4) mit **geringwertigen Mitteln**, (5) Leistung **und Gegenleistung bewirkt**, (6) keine erhebliche Gefahr für Person/Vermögen" },
+  { id: "gf9", cat: "geschaeftsfaehigkeit", q: "§ 105a BGB – Rechtsfolge?", a: "**Verpflichtungs- und Verfügungsgeschäft(e) werden wirksam** – eine bewusste Durchbrechung des Trennungsprinzips" },
+  { id: "gf10", cat: "geschaeftsfaehigkeit", q: "Besonderheit von § 105a BGB im Gutachtenaufbau?", a: "Die Wirksamkeit des Verpflichtungsgeschäfts tritt erst ein, wenn auch die Verfügungsgeschäfte vollzogen sind – man muss diese daher **inzident** (z. B. § 929 S. 1 BGB) mitprüfen" },
+
+  // --- Beschränkt geschäftsfähige Minderjährige (§§ 106–111, 131 II, 182–184) ---
+  { id: "mj1", cat: "minderjaehrige", q: "Wer ist beschränkt geschäftsfähig?", a: "Wer das **7. Lebensjahr vollendet** hat (§ 106 BGB), aber noch **nicht das 18.** (§ 2 BGB)" },
+  { id: "mj2", cat: "minderjaehrige", q: "Die drei Konstellationen bei beschränkt geschäftsfähigen Minderjährigen?", a: "(1) **Vertrag** mit Drittem → §§ 107, 108–110 BGB. (2) **Einseitiges RG des MJ** → §§ 107, 111 BGB. (3) **Einseitiges RG eines Dritten gegenüber dem MJ** → § 131 Abs. 2 BGB" },
+  { id: "mj3", cat: "minderjaehrige", q: "Prüfungsreihenfolge bei einem Vertrag mit einem Minderjährigen?", a: "**Zuerst** die allgemeinen Voraussetzungen des Vertragsschlusses – so, als hätten zwei Volljährige gehandelt. **Erst danach** die Minderjährigkeit, für den Vertrag als Ganzes (§ 108 Abs. 1 BGB)" },
+  { id: "mj4", cat: "minderjaehrige", q: "Warum wird § 131 Abs. 2 BGB beim Vertragsschluss mit einem MJ nicht geprüft?", a: "Weil § 108 BGB als **vorrangige Spezialregelung** § 131 Abs. 2 BGB verdrängt – Angebot und Annahme werden ganz normal nach § 130 BGB (ggf. analog) wirksam" },
+  { id: "mj5", cat: "minderjaehrige", q: "Was bedeutet „schwebende Unwirksamkeit“ (§ 108 Abs. 1 BGB)?", a: "Der Vertrag ist zunächst unwirksam, kann aber durch nachträgliche **Genehmigung** des gesetzlichen Vertreters (§ 184 Abs. 1 BGB) **rückwirkend** wirksam werden" },
+  { id: "mj6", cat: "minderjaehrige", q: "Voraussetzungen der schwebenden Unwirksamkeit nach § 108 Abs. 1 BGB?", a: "(1) MJ beschränkt geschäftsfähig (§§ 2, 106 BGB), (2) Einwilligung nach § 107 BGB **erforderlich**, (3) Einwilligung lag **nicht wirksam vor**" },
+  { id: "mj7", cat: "minderjaehrige", q: "§ 107 BGB – wann ist die Einwilligung erforderlich?", a: "Immer, wenn das Rechtsgeschäft für den MJ **nicht lediglich rechtlich vorteilhaft** ist – also sobald **irgendein** rechtlicher Nachteil entsteht, und sei er noch so klein" },
+  { id: "mj8", cat: "minderjaehrige", q: "Was sind „rechtliche Nachteile“ im Sinne des § 107 BGB?", a: "Jede noch so kleine **Verpflichtung**, der **Verlust** eines Rechts (z. B. Eigentum), jede **Minderung** eines Rechts" },
+  { id: "mj9", cat: "minderjaehrige", q: "Kommt es bei § 107 BGB auf wirtschaftliche Vorteilhaftigkeit an?", a: "**Nein.** Gegenleistungen bleiben außer Betracht. Auch der größte wirtschaftliche Vorteil wiegt einen kleinen rechtlichen Nachteil nicht auf (Bsp.: Bild im Wert von 10.000 € für 100 € kaufen → trotzdem nachteilig)" },
+  { id: "mj10", cat: "minderjaehrige", q: "Beispiele für **lediglich rechtlich vorteilhafte** Geschäfte?", a: "Schenkung an den MJ (§ 516), Erlassvertrag wenn MJ Schuldner ist (§ 397), Abtretung an den MJ (§ 398), Eigentumsübertragung **an** den MJ (§ 929 S. 1 BGB)" },
+  { id: "mj11", cat: "minderjaehrige", q: "Warum ist ein Kaufvertrag für einen MJ nie lediglich vorteilhaft?", a: "Weil ihn **beide** Rollen verpflichten: als Käufer § 433 Abs. 2 BGB (Zahlung), als Verkäufer § 433 Abs. 1 BGB (Übergabe/Eigentumsverschaffung)" },
+  { id: "mj12", cat: "minderjaehrige", q: "Ist ein Leihvertrag für den MJ als Entleiher lediglich vorteilhaft?", a: "**Nein** – wegen der Rückgabepflicht aus § 604 BGB. Gleiches beim Auftrag (§ 662) wegen § 670 BGB" },
+  { id: "mj13", cat: "minderjaehrige", q: "Wer ist gesetzlicher Vertreter eines Minderjährigen?", a: "Grundsätzlich **beide Eltern** (§§ 1626 Abs. 1, 1629 Abs. 1 S. 1, S. 2 BGB); sonst der allein sorgeberechtigte Elternteil, sonst ein **Vormund** (§ 1793 BGB) bzw. **Pfleger**" },
+  { id: "mj14", cat: "minderjaehrige", q: "Aktiv- vs. Passivvertretung durch die Eltern?", a: "**Aktiv** (WE abgeben, zustimmen): grundsätzlich beide gemeinsam. **Passiv** (Erklärungen entgegennehmen): Zugang bei **einem** Elternteil genügt (§ 1629 Abs. 1 S. 2, 2. HS BGB)" },
+  { id: "mj15", cat: "minderjaehrige", q: "Zustimmung, Einwilligung, Genehmigung – Systematik (§§ 182–184 BGB)?", a: "**Zustimmung** = Oberbegriff. **Einwilligung** = vorherige Zustimmung (§ 183 S. 1). **Genehmigung** = nachträgliche Zustimmung (§ 184 Abs. 1), wirkt **rückwirkend**" },
+  { id: "mj16", cat: "minderjaehrige", q: "Wer ist richtiger Adressat einer Zustimmung (§ 182 Abs. 1 BGB)?", a: "Wahlweise der **Minderjährige oder sein Vertragspartner**. Grundsätzlich formfrei (§ 182 Abs. 2 BGB)" },
+  { id: "mj17", cat: "minderjaehrige", q: "Voraussetzungen einer wirksamen Einwilligung?", a: "(1) Einwilligungserklärung (auch konkludent), (2) durch den gesetzlichen Vertreter, (3) Wirksamwerden durch Zugang, (4) richtiger Adressat (§ 182 Abs. 1), (5) **vor** Abschluss des Vertrags" },
+  { id: "mj18", cat: "minderjaehrige", q: "Wie kann der gesetzliche Vertreter den Schwebezustand beenden?", a: "Durch **Genehmigung** (§ 184 Abs. 1 BGB → Vertrag rückwirkend wirksam) oder durch **Genehmigungsverweigerung** (→ Vertrag endgültig unwirksam und genehmigungsunfähig)" },
+  { id: "mj19", cat: "minderjaehrige", q: "§ 108 Abs. 3 BGB – was gilt nach Eintritt der Volljährigkeit?", a: "Die Befugnis zur Genehmigung geht auf den **vormals Minderjährigen** über; die Eltern können dann nicht mehr genehmigen. Adressat ist nur noch der Vertragspartner" },
+  { id: "mj20", cat: "minderjaehrige", q: "§ 108 Abs. 2 BGB – was ist die Aufforderung rechtlich?", a: "**Keine Willenserklärung**, sondern eine **geschäftsähnliche Handlung** – die Regeln über WE (§ 130 Zugang, §§ 133, 157 Auslegung) gelten aber **entsprechend**" },
+  { id: "mj21", cat: "minderjaehrige", q: "Die drei Rechtsfolgen der Aufforderung nach § 108 Abs. 2 BGB?", a: "(1) Eine vorher **gegenüber dem MJ** erklärte Genehmigung/Verweigerung wird unwirksam, (2) richtiger Adressat ist nur noch der **Vertragspartner**, (3) **Zwei-Wochen-Frist** läuft – danach gilt die Genehmigung als **verweigert**" },
+  { id: "mj22", cat: "minderjaehrige", q: "§ 109 BGB – wann hat der Vertragspartner ein Widerrufsrecht (Abs. 2)?", a: "Nur wenn er die Minderjährigkeit **nicht kannte**, oder wenn der MJ **wahrheitswidrig** eine Einwilligung behauptet hat und dem Partner das Fehlen nicht bekannt war. In der Praxis **selten**" },
+  { id: "mj23", cat: "minderjaehrige", q: "§ 109 BGB – Adressat des Widerrufs?", a: "Der gesetzliche Vertreter **oder der Minderjährige selbst** (§ 109 Abs. 1 S. 2 BGB verdrängt insoweit § 131 Abs. 2 BGB). Rechtsfolge: Vertrag wird **nichtig**" },
+  { id: "mj24", cat: "minderjaehrige", q: "§ 110 BGB (Taschengeldparagraf) – Voraussetzungen?", a: "(1) Mittel vom gesetzlichen Vertreter (oder mit dessen Zustimmung) **zur freien Verfügung** überlassen, (2) MJ hat seine Leistung damit **vollständig bewirkt**" },
+  { id: "mj25", cat: "minderjaehrige", q: "§ 110 vs. § 105a BGB – wichtiger Unterschied?", a: "Bei § 110 BGB kommt es **nur** darauf an, dass der MJ vollständig geleistet hat – nicht darauf, ob auch der Vertragspartner geleistet hat. Bei § 105a BGB müssen **beide** Leistungen bewirkt sein" },
+  { id: "mj26", cat: "minderjaehrige", q: "Gilt § 110 BGB auch für einseitige Rechtsgeschäfte?", a: "**Nein** – § 110 BGB gilt nur für **Verträge**" },
+  { id: "mj27", cat: "minderjaehrige", q: "§ 111 S. 1 BGB – Rechtsfolge bei einseitigem RG des MJ ohne Einwilligung?", a: "Das Rechtsgeschäft ist **nichtig** – nicht schwebend unwirksam! Eine spätere Genehmigung kann es **nicht** heilen" },
+  { id: "mj28", cat: "minderjaehrige", q: "Warum ist die Rechtsfolge bei § 111 BGB strenger als bei § 108 BGB?", a: "Weil der Empfänger eines einseitigen RG (z. B. einer Kündigung) **sofort Klarheit** braucht – er kann nicht auf eine mögliche Genehmigung warten wie ein Vertragspartner" },
+  { id: "mj29", cat: "minderjaehrige", q: "§ 111 S. 2–3 BGB – wann wird ein einseitiges RG trotz Einwilligung unwirksam?", a: "Wenn die Einwilligung dem Dritten **nicht schriftlich vorgelegt** wurde, dieser das Geschäft deswegen **unverzüglich zurückweist** und der gesetzliche Vertreter ihn nicht anderweitig informiert hatte" },
+  { id: "mj30", cat: "minderjaehrige", q: "§ 131 Abs. 2 BGB – WE eines Dritten gegenüber einem beschränkt geschäftsfähigen MJ?", a: "Grundsätzlich Wirksamwerden erst mit **Zugang beim gesetzlichen Vertreter**. Ausnahme (S. 2): Zugang beim MJ genügt, wenn die Erklärung **lediglich rechtlich vorteilhaft** ist oder der gesetzliche Vertreter **eingewilligt** hat" },
+
+  // --- Fristberechnung (§§ 186 ff. BGB) ---
+  { id: "fr1", cat: "fristen", q: "§ 186 BGB – Anwendungsbereich der Fristenregeln?", a: "Sehr weit: **gesetzliche** Fristen (nicht nur im BGB), **gerichtlich gesetzte** Fristen und **rechtsgeschäftlich vereinbarte** Fristen" },
+  { id: "fr2", cat: "fristen", q: "§ 187 Abs. 1 BGB – Fristbeginn bei einem auslösenden Ereignis?", a: "Der Tag des Ereignisses **zählt nicht mit** – die Frist beginnt am **Folgetag um 0:00 Uhr**" },
+  { id: "fr3", cat: "fristen", q: "§ 187 Abs. 2 BGB – wann zählt der erste Tag mit?", a: "Wenn die Frist zu einem **festgelegten Zeitpunkt** beginnt (z. B. „ab dem 01.09.“) – und bei der **Berechnung des Lebensalters** (Geburtstag zählt mit, § 187 Abs. 2 S. 2 BGB)" },
+  { id: "fr4", cat: "fristen", q: "§ 188 Abs. 2 BGB – Fristende bei Wochen-/Monatsfrist (nach § 187 Abs. 1 begonnen)?", a: "Ablauf des Tages, der **dieselbe Benennung bzw. Zahl** trägt wie der **Tag des fristauslösenden Ereignisses** – nicht wie der rechnerische Fristbeginn!" },
+  { id: "fr5", cat: "fristen", q: "Häufiger Rechenfehler beim Fristende?", a: "Den **rechnerischen Fristbeginn** statt des **Ereignistages** als Bezugspunkt zu nehmen. Maßgeblich ist der Tag des auslösenden Ereignisses" },
+  { id: "fr6", cat: "fristen", q: "§ 193 BGB – Sonderregel?", a: "Fällt der letzte Tag einer Frist auf **Samstag, Sonntag oder einen Feiertag**, verschiebt sich das Fristende auf den **nächsten Werktag**" },
+  { id: "fr7", cat: "fristen", q: "Wann genau wird jemand volljährig (Berechnung)?", a: "Fristbeginn: Geburtstag zählt mit (§ 187 Abs. 2 S. 2 BGB). Fristende: § 188 Abs. 2, 2. Alt. BGB → Ablauf des **Vortages** des 18. Geburtstags. Volljährig also mit Beginn des Geburtstags um **0:00 Uhr**" }
 ];
 
 var CARD_BY_ID = {};
